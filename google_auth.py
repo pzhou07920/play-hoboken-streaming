@@ -33,18 +33,18 @@ def google_auth():
     yt_client = build(API_SERVICE_NAME, API_VERSION, credentials = creds)
     return yt_client
 
-def start_yt_broadcast():
+def start_yt_broadcast(stream_title):
     yt_client = google_auth()
     current_time = datetime.datetime.now(datetime.timezone.utc)
-    time_1_min = datetime.timedelta(seconds=10)
-    sched_time = (current_time + time_1_min).isoformat()
+    time_10_sec = datetime.timedelta(seconds=10)
+    sched_time = (current_time + time_10_sec).isoformat()
     print(f'Current Time is {current_time}')
     print(f'Scheduled Time is {sched_time}')
     response = yt_client.liveBroadcasts().insert(
         part="snippet,status",
         body={
           "snippet": {
-            "title": "Test Broadcast",
+            "title": f"{stream_title}",
             "scheduledStartTime": sched_time
           },
           "status": {
@@ -55,5 +55,7 @@ def start_yt_broadcast():
     )
 
     print(response.execute())
+    stream_id = response.execute().get('id')
+    return stream_id
 
 # start_yt_broadcast()

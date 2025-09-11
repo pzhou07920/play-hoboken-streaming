@@ -19,11 +19,11 @@ async def stream():
     STREAM_NAME = secrets['stream_names'][0]
 
     access_code = ac.generate_access_code()
-    ga.start_yt_broadcast()
+    stream_id = ga.start_yt_broadcast(stream_title=STREAM_NAME)
     sleep(5)
     subprocess.run(['ffmpeg',
                     '-i',
-                    'rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}',
+                    f'rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}',
                     '-vcodec',
                     'copy',
                     '-acodec',
@@ -33,4 +33,4 @@ async def stream():
                     'rtmp://a.rtmp.youtube.com/live2/4zh4-9gbe-zyg6-qqhx-8vxs'
                     ], capture_output=False)
 
-    return f"Stream has been started! Watch the stream here: https://www.youtube.com/watch?v="
+    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{stream_id}"
