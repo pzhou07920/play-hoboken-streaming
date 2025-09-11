@@ -14,17 +14,16 @@ async def stream():
     # read in secrets.yml
     with open("secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
-    stream_username = secrets['stream_username']
-    stream_password = secrets['stream_password']
-    stream_name = secrets['stream_names'][0]
-     #print(f"testing {secrets['stream_names'][0]}")
+    STREAM_USERNAME = secrets['stream_username']
+    STREAM_PASSWORD = secrets['stream_password']
+    STREAM_NAME = secrets['stream_names'][0]
 
     access_code = ac.generate_access_code()
     ga.start_yt_broadcast()
     sleep(5)
     subprocess.run(['ffmpeg',
                     '-i',
-                    'rtsp://{stream_username}:{stream_password}@192.168.50.215/{stream_name}',
+                    'rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}',
                     '-vcodec',
                     'copy',
                     '-acodec',
@@ -34,4 +33,4 @@ async def stream():
                     'rtmp://a.rtmp.youtube.com/live2/4zh4-9gbe-zyg6-qqhx-8vxs'
                     ], capture_output=False)
 
-    return f"Today's access_code = {access_code}"
+    return f"Stream has been started! Watch the stream here: https://www.youtube.com/watch?v="
