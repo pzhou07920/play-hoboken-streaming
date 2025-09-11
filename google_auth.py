@@ -13,9 +13,9 @@ flow = InstalledAppFlow.from_client_secrets_file('client_secret.json',
 # match one of the authorized redirect URIs for the OAuth 2.0 client, which you
 # configured in the API Console. If this value doesn't match an authorized URI,
 # you will get a 'redirect_uri_mismatch' error.
-flow.redirect_uri = 'http://localhost:8000'
+flow.redirect_uri = 'http://localhost/'
 
-creds = flow.run_local_server(port=2837)
+creds = flow.run_local_server(port=8000)
 with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
