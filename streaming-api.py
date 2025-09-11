@@ -21,16 +21,21 @@ async def stream():
     access_code = ac.generate_access_code()
     stream_id = ga.start_yt_broadcast(stream_title=STREAM_NAME)
     sleep(5)
-    subprocess.run(['ffmpeg',
-                    '-i',
-                    f'rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}',
-                    '-vcodec',
-                    'copy',
-                    '-acodec',
-                    'aac',
-                    '-f',
-                    'flv',
-                    'rtmp://a.rtmp.youtube.com/live2/4zh4-9gbe-zyg6-qqhx-8vxs'
-                    ], capture_output=False)
+    subprocess.run([
+        "Powershell.exe",
+        "Start-Process",
+        "-FilePath",
+        "ffmpeg.exe",
+        "-ArgumentList",
+        "\"-i",
+        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}",
+        "-vcodec",
+        "copy",
+        "-acodec",
+        "aac",
+        "-f",
+        "flv",
+        "rtmp://a.rtmp.youtube.com/live2/4zh4-9gbe-zyg6-qqhx-8vxs\""
+    ], shell=True, capture_output=False)
 
     return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{stream_id}"

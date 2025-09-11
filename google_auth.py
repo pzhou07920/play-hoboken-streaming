@@ -48,7 +48,7 @@ def start_yt_broadcast(stream_title):
             "scheduledStartTime": sched_time
           },
           "status": {
-            "privacyStatus": "private",
+            "privacyStatus": "public",
             "selfDeclaredMadeForKids": False
           }
         }
