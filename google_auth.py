@@ -1,47 +1,60 @@
-import google.oauth2.credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+import google.auth.exceptions
+import os
+import datetime
 
-# Required, call the from_client_secrets_file method to retrieve the client ID from a
-# client_secret.json file. The client ID (from that file) and access scopes are required. (You can
-# also use the from_client_config method, which passes the client configuration as it originally
-# appeared in a client secrets file but doesn't access the file itself.)
-flow = InstalledAppFlow.from_client_secrets_file('client_secret.json',
-    scopes=['https://www.googleapis.com/auth/youtube'])
+def google_auth():
 
-# Required, indicate where the API server will redirect the user after the user completes
-# the authorization flow. The redirect URI is required. The value must exactly
-# match one of the authorized redirect URIs for the OAuth 2.0 client, which you
-# configured in the API Console. If this value doesn't match an authorized URI,
-# you will get a 'redirect_uri_mismatch' error.
-flow.redirect_uri = 'http://localhost/'
+    SCOPES=['https://www.googleapis.com/auth/youtube']
+    API_SERVICE_NAME = "youtube"
+    API_VERSION = "v3"
 
-creds = flow.run_local_server(port=8000)
-with open('token.json', 'w') as token:
+    creds = None
+    if os.path.exists('token.json'):
+        try:
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+            creds.refresh(Request())
+        except google.auth.exceptions.RefreshError as error:
+            # if refresh token fails, reset creds to none.
+            creds = None
+            print(f'Refresh token expired requesting authorization again: {error}')
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', scopes=SCOPES)
+            # flow.redirect_uri = 'http://localhost/'
+            creds = flow.run_local_server(port=8000, prompt='consent')
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
             token.write(creds.to_json())
+    yt_client = build(API_SERVICE_NAME, API_VERSION, credentials = creds)
+    return yt_client
 
+def start_yt_broadcast():
+    yt_client = google_auth()
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    time_1_min = datetime.timedelta(seconds=10)
+    sched_time = (current_time + time_1_min).isoformat()
+    print(f'Current Time is {current_time}')
+    print(f'Scheduled Time is {sched_time}')
+    response = yt_client.liveBroadcasts().insert(
+        part="snippet,status",
+        body={
+          "snippet": {
+            "title": "Test Broadcast",
+            "scheduledStartTime": sched_time
+          },
+          "status": {
+            "privacyStatus": "private",
+            "selfDeclaredMadeForKids": False
+          }
+        }
+    )
 
-# import googleapiclient.discovery
+    print(response.execute())
 
-# # API information
-# api_service_name = "youtube"
-# api_version = "v3"
-# # API key
-# DEVELOPER_KEY = ""
-# # API client
-# youtube = googleapiclient.discovery.build(
-#     api_service_name, api_version, developerKey = DEVELOPER_KEY)
-
-# request=youtube.liveBroadcasts().insert(
-#     part="snippet,status",
-#     body={
-#       "snippet": {
-#         "title": "Test Broadcast",
-#         "scheduledStartTime": "2025-09-10T18:00:00Z"
-#       },
-#       "status": {
-#         "privacyStatus": "private"
-#       }
-#     }
-# )
-
-# response = request.execute()
+# start_yt_broadcast()
