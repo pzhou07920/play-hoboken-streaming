@@ -95,7 +95,7 @@ def bind_stream():
     yt_client = google_auth()
     broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
     stream_id = start_yt_livestream(yt_client)
-
+    #broadcast_id = "b7k7x1l6o4c"
     print(f'Binding Broadcast {broadcast_id} to Stream {stream_id}')
     response = yt_client.liveBroadcasts().bind(
         part="id,contentDetails",

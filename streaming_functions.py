@@ -2,7 +2,7 @@ from time import sleep
 import google_auth as ga
 import subprocess
 
-def send_stream(stream_name: str, secrets: dict):
+def create_stream(stream_name: str, secrets: dict):
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
 
