@@ -55,7 +55,43 @@ def start_yt_broadcast(stream_title):
     )
 
     print(response.execute())
-    stream_id = response.execute().get('id')
-    return stream_id
+    broadcast_id = response.execute().get('id')
+    print(f'Broadcast ID is: {broadcast_id}')
+    return broadcast_id
 
-# start_yt_broadcast()
+def start_yt_livestream():
+    yt_client = google_auth()
+    response = yt_client.liveStreams().insert(
+        part="snippet,cdn,contentDetails",
+        body={
+          "snippet": {
+            "title": "Test Stream",
+            "description": "This is a test stream"
+          },
+          "cdn": {
+            "frameRate": "30fps",
+            "ingestionType": "rtmp",
+            "resolution": "720p"
+          },
+          "contentDetails": {
+            "isReusable": True
+          }
+        }
+    )
+    print(response.execute())
+    stream_key = response.execute().get('cdn').get('ingestionInfo').get('streamName')
+    print(f'Stream Key is: {stream_key}')
+    return stream_key
+
+def bind_stream():
+    yt_client = google_auth()
+    broadcast_id = start_yt_broadcast("Test Bind")
+    stream_id = start_yt_livestream()
+    response = yt_client.liveBroadcasts().bind(
+        part="id,contentDetails",
+        id=broadcast_id,
+        streamId=stream_id
+    )
+    print(response.execute())
+
+bind_stream()
