@@ -61,6 +61,7 @@ def start_yt_broadcast(yt_client, stream_title):
         }
     ).execute()
 
+    #print(response)
     broadcast_id = response.get('id')
     print(f'Broadcast ID is: {broadcast_id}')
     return broadcast_id
@@ -87,15 +88,17 @@ def start_yt_livestream(yt_client):
         }
     ).execute()
 
-    stream_key = response.get('cdn').get('ingestionInfo').get('streamName')
+    #print(response)
+    stream_key = response.get('id')
     print(f'Stream Key is: {stream_key}')
     return stream_key
 
-def bind_stream():
-    yt_client = google_auth()
-    broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
-    stream_id = start_yt_livestream(yt_client)
+def bind_broadcast_to_stream(yt_client, broadcast_id, stream_id):
+    #yt_client = google_auth()
+    #broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
+    #stream_id = start_yt_livestream(yt_client)
     #broadcast_id = "b7k7x1l6o4c"
+
     print(f'Binding Broadcast {broadcast_id} to Stream {stream_id}')
     response = yt_client.liveBroadcasts().bind(
         part="id,contentDetails",
@@ -103,8 +106,35 @@ def bind_stream():
         streamId=stream_id
     ).execute()
 
-    print(f"Bind response: {response}")
+    #print(f"Bind response: {response}")
 
-bind_stream()
-#start_yt_livestream()
-#start_yt_broadcast("Test Stream from API")
+#bind_broadcast_to_stream()
+# start_yt_livestream( )
+#start_yt_broadcast("Test Stream from API") 
+
+def get_streamkey(yt_client, stream_id):
+    #yt_client = google_auth()
+    print(f'Getting Stream Key for Stream ID: {stream_id}')
+    response = yt_client.liveStreams().list(
+        part="snippet,cdn",
+        mine=True
+    ).execute()
+
+    #print(response)
+    # get the Stream Key for the item with id = stream_id
+    for item in response.get('items', []):
+        if item['id'] == stream_id:
+            stream_key = item['cdn']['ingestionInfo']['streamName']
+            print(f'Stream Key is: {stream_key}')
+            return stream_key
+        
+def start_new_broadcast(stream_title):
+    yt_client = google_auth()
+    broadcast_id = start_yt_broadcast(yt_client, stream_title)
+    stream_id = start_yt_livestream(yt_client)
+    bind_broadcast_to_stream(yt_client, broadcast_id, stream_id)
+    stream_key = get_streamkey(yt_client, stream_id)
+    return stream_key
+
+stream_key = start_new_broadcast("Test Stream from Function")
+print(f"Stream Key from function: {stream_key}")
