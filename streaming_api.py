@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query
 import yaml
 import streaming_functions as sf
+import google_auth as ga
 from time import sleep
 
 app = FastAPI()
@@ -11,8 +12,9 @@ async def stream(stream_name: str = Query(None)):
     with open("secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
 
-    stream_id = sf.create_stream(stream_name, secrets)
-    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{stream_id}"
+    ga.google_auth()
+    broadcast_id = sf.create_stream(stream_name, secrets)
+    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
 
 @app.get("/test_stream")
 async def test_stream():

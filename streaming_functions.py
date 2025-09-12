@@ -6,25 +6,32 @@ def create_stream(stream_name: str, secrets: dict):
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
 
+    stream_name = stream_name.lower().capitalize()
+    print("capitalized stream_name " + stream_name)
     # access_code = ac.generate_access_code()
 
-    stream_id = ga.start_new_broadcast(stream_name)
+    broadcast_id, stream_id, stream_key = ga.start_new_broadcast(stream_name)
     sleep(5)
-    subprocess.run([
+
+    pid = subprocess.run([
         "Powershell.exe",
         "Start-Process",
         "-FilePath",
         "ffmpeg.exe",
         "-ArgumentList",
         "\"-i",
-        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{STREAM_NAME}",
+        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{stream_name}",
         "-vcodec",
         "copy",
         "-acodec",
         "aac",
         "-f",
         "flv",
-        "rtmp://a.rtmp.youtube.com/live2/4zh4-9gbe-zyg6-qqhx-8vxs\""
+        f"rtmp://a.rtmp.youtube.com/live2/{stream_key}\""
     ], shell=True, capture_output=False)
 
-    return stream_id
+    print("sleeping...")
+    sleep(30)
+    ga.broadcast_go_live(broadcast_id)
+    print(f"Started FFMPEG process with PID = {pid}")
+    return broadcast_id

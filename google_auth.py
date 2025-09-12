@@ -35,17 +35,18 @@ def google_auth():
         with open('token.json', 'w') as token:
             print("Saving credentials to token.json")
             token.write(creds.to_json())
+    global yt_client
     yt_client = build(API_SERVICE_NAME, API_VERSION, credentials = creds)
-    return yt_client
+    return
 
-def start_yt_broadcast(yt_client, stream_title):
+def start_yt_broadcast(stream_title):
     #yt_client = google_auth()
 
     print(f'Starting YouTube Broadcast with title: {stream_title}')
     current_time = datetime.datetime.now(datetime.timezone.utc)
     time_10_sec = datetime.timedelta(seconds=10)
     sched_time = (current_time + time_10_sec).isoformat()
-    print(f'Current Time is {current_time}')
+    # print(f'Current Time is {current_time}')
     print(f'Scheduled Time is {sched_time}')
     response = yt_client.liveBroadcasts().insert(
         part="snippet,status",
@@ -66,7 +67,7 @@ def start_yt_broadcast(yt_client, stream_title):
     print(f'Broadcast ID is: {broadcast_id}')
     return broadcast_id
 
-def start_yt_livestream(yt_client):
+def start_yt_livestream():
     #yt_client = google_auth()
 
     print('Starting YouTube Live Stream')
@@ -93,7 +94,7 @@ def start_yt_livestream(yt_client):
     print(f'Stream Key is: {stream_key}')
     return stream_key
 
-def bind_broadcast_to_stream(yt_client, broadcast_id, stream_id):
+def bind_broadcast_to_stream(broadcast_id, stream_id):
     #yt_client = google_auth()
     #broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
     #stream_id = start_yt_livestream(yt_client)
@@ -112,7 +113,7 @@ def bind_broadcast_to_stream(yt_client, broadcast_id, stream_id):
 # start_yt_livestream( )
 #start_yt_broadcast("Test Stream from API") 
 
-def get_streamkey(yt_client, stream_id):
+def get_streamkey(stream_id):
     #yt_client = google_auth()
     print(f'Getting Stream Key for Stream ID: {stream_id}')
     response = yt_client.liveStreams().list(
@@ -129,12 +130,20 @@ def get_streamkey(yt_client, stream_id):
             return stream_key
         
 def start_new_broadcast(stream_title):
-    yt_client = google_auth()
-    broadcast_id = start_yt_broadcast(yt_client, stream_title)
-    stream_id = start_yt_livestream(yt_client)
-    bind_broadcast_to_stream(yt_client, broadcast_id, stream_id)
-    stream_key = get_streamkey(yt_client, stream_id)
-    return stream_key
+    #yt_client = google_auth()
+    broadcast_id = start_yt_broadcast(stream_title)
+    stream_id = start_yt_livestream()
+    bind_broadcast_to_stream(broadcast_id, stream_id)
+    stream_key = get_streamkey(stream_id)
+    return broadcast_id, stream_id, stream_key
 
-stream_key = start_new_broadcast("Test Stream from Function")
-print(f"Stream Key from function: {stream_key}")
+def broadcast_go_live(broadcast_id):
+    print(f"Going live with broadcast: {broadcast_id}")
+    response = yt_client.liveBroadcasts().transition(
+        part="id,snippet,contentDetails,status",
+        broadcastStatus= 'live',
+        id= broadcast_id,
+    ).execute()
+   #"https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?part=id,snippet,contentDetails,status&broadcastStatus=live&id=$BROADCAST_ID"
+# stream_key = start_new_broadcast("Test Stream from Function")
+# print(f"Stream Key from function: {stream_key}")
