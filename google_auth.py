@@ -49,7 +49,7 @@ def start_yt_broadcast(stream_title):
     # print(f'Current Time is {current_time}')
     print(f'Scheduled Time is {sched_time}')
     response = yt_client.liveBroadcasts().insert(
-        part="snippet,status",
+        part="snippet,status,contentDetails",
         body={
           "snippet": {
             "title": f"{stream_title}",
@@ -58,6 +58,12 @@ def start_yt_broadcast(stream_title):
           "status": {
             "privacyStatus": "public",
             "selfDeclaredMadeForKids": False
+          },
+          "contentDetails": {
+            "enableAutoStart": False,
+            "monitorStream" : {
+              "enableMonitorStream": False
+            }
           }
         }
     ).execute()
@@ -137,13 +143,26 @@ def start_new_broadcast(stream_title):
     stream_key = get_streamkey(stream_id)
     return broadcast_id, stream_id, stream_key
 
-def broadcast_go_live(broadcast_id):
+def broadcast_go_live(broadcast_id, stream_id):
     print(f"Going live with broadcast: {broadcast_id}")
+    get_stream_status(stream_id)
     response = yt_client.liveBroadcasts().transition(
         part="id,snippet,contentDetails,status",
-        broadcastStatus= 'live',
-        id= broadcast_id,
+        broadcastStatus='live',
+        id=broadcast_id,
     ).execute()
    #"https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?part=id,snippet,contentDetails,status&broadcastStatus=live&id=$BROADCAST_ID"
-# stream_key = start_new_broadcast("Test Stream from Function")
-# print(f"Stream Key from function: {stream_key}")
+
+def get_stream_status(stream_id):
+    #yt_client = google_auth()
+    print(f'Getting Stream Status for Stream ID: {stream_id}')
+    response = yt_client.liveStreams().list(
+        part="snippet,cdn,status",
+        mine=True
+    ).execute()
+
+    #print(response)
+    # get the Stream Key for the item with id = stream_id
+    for item in response.get('items', []):
+        if item['id'] == stream_id:
+            print(item)

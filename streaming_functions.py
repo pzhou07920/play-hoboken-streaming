@@ -13,7 +13,7 @@ def create_stream(stream_name: str, secrets: dict):
     broadcast_id, stream_id, stream_key = ga.start_new_broadcast(stream_name)
     sleep(5)
 
-    pid = subprocess.run([
+    process = subprocess.Popen([
         "Powershell.exe",
         "Start-Process",
         "-FilePath",
@@ -21,6 +21,8 @@ def create_stream(stream_name: str, secrets: dict):
         "-ArgumentList",
         "\"-i",
         f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{stream_name}",
+        "-b:v",
+        "25k",
         "-vcodec",
         "copy",
         "-acodec",
@@ -28,10 +30,11 @@ def create_stream(stream_name: str, secrets: dict):
         "-f",
         "flv",
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}\""
-    ], shell=True, capture_output=False)
+    ], shell=True)
+    print(f"Started FFMPEG process with PID = {process.pid}")
 
     print("sleeping...")
-    sleep(30)
-    ga.broadcast_go_live(broadcast_id)
-    print(f"Started FFMPEG process with PID = {pid}")
+    sleep(10)
+    ga.broadcast_go_live(broadcast_id, stream_id)
+    
     return broadcast_id
