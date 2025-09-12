@@ -29,6 +29,7 @@ async def test_multi_streams(stream_count: int = Query(None)):
         if count < stream_count:
             print(f"Starting stream: {stream_name}")
             broadcast_id = sf.create_stream(stream_name, secrets)
+            count += 1
             sleep(20)
     print(f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}")
     return "Multi-stream test completed."
