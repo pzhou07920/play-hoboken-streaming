@@ -167,7 +167,7 @@ def get_stream_status(stream_id):
         if item['id'] == stream_id:
             print(item)
 
-def get_viewer_count(broadcast_id):
+def get_broadcast_info(broadcast_id):
     yt_client = google_auth()
     print(f'Getting Viewer Count for Broadcast ID: {broadcast_id}')
     response = yt_client.liveBroadcasts().list(
@@ -175,9 +175,20 @@ def get_viewer_count(broadcast_id):
         id=broadcast_id
     ).execute()
 
-    #print(response)
+    # get stream runtime
+    runtime = 0
+    start_time_str = ""
     for item in response.get('items', []):
+        if item['id'] == broadcast_id:
+            start_time_str = item['snippet']['actualStartTime']
+            print(f'Start Time is: {start_time_str}')
+            start_time = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+            current_time = datetime.datetime.now(datetime.timezone.utc)
+            runtime = (current_time - start_time).total_seconds() / 60  # runtime in minutes
+            runtime = int(runtime)
+            print(f'Runtime is: {runtime} minutes')
+            break
         if item['id'] == broadcast_id:
             viewer_count = item['statistics']['concurrentViewers']
             print(f'Viewer Count is: {viewer_count}')
-            return viewer_count
+    return viewer_count, runtime

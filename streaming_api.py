@@ -3,6 +3,7 @@ import yaml
 import streaming_functions as sf
 import google_auth as ga
 from time import sleep
+import threading
 
 app = FastAPI()
 
@@ -14,6 +15,11 @@ async def stream(stream_name: str = Query(None)):
 
     ga.google_auth()
     broadcast_id = sf.create_stream(stream_name, secrets)
+
+    print("Starting thread to close idle broadcast after 1 hour")
+    thread = threading.Thread(target=sf.close_idle_broadcast, args=(broadcast_id,))
+    thread.start()
+
     return f'''Stream has been started! Watch the stream here: 
                 https://www.youtube.com/live/{broadcast_id}
             '''
