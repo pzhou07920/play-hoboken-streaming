@@ -4,6 +4,19 @@ import subprocess
 import csv
 import os
 
+def at_broadcast_limit(broadcast_limit: int):
+    with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
+        #csvfile.seek(0)
+        reader = csv.reader(csvfile)
+        # count the number of rows in the csv file
+        row_count = sum(1 for row in reader) - 1  # subtract 1 for header
+        print(f"Current number of broadcasts: {row_count}")
+        if row_count >= broadcast_limit:
+            print(f"At broadcast limit of {broadcast_limit}. Cannot start new broadcast.")
+            return True
+        else:
+            return False
+
 def stream_already_running(stream_name: str, pid: int, broadcast_id: str = None):
     # check if stream_pid_tracker.csv exists, if not create it and add header
     if os.path.exists('stream_pid_tracker.csv'):
@@ -15,12 +28,25 @@ def stream_already_running(stream_name: str, pid: int, broadcast_id: str = None)
 
     with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
         # Check if the stream_name already exists in the csv file
-        csvfile.seek(0)
+        #csvfile.seek(0)
         reader = csv.reader(csvfile)
         for row in reader:
             if row[0] == stream_name:
                 print(f"Stream {row[0]} with PID {row[1]} and Broadcast ID {row[2]} already exists.")
-                return
+                return True
+    return False
+
+def get_running_stream(stream_name: str):
+    if os.path.exists('stream_pid_tracker.csv'):
+        with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)  # Skip header
+            for row in reader:
+                if row[0] == stream_name:
+                    pid = row[2]
+                    broadcast_id = row[3]
+                    return stream_name, pid, broadcast_id
+    return None
 
 def log_stream_info(stream_name: str, pid: int, broadcast_id: str):
     with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
@@ -30,13 +56,7 @@ def log_stream_info(stream_name: str, pid: int, broadcast_id: str):
 def create_stream(stream_name: str, secrets: dict):
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
-
-    stream_name = stream_name.lower().capitalize()
-    print("capitalized stream_name " + stream_name)
     # access_code = ac.generate_access_code()
-
-    # check if stream is already running
-    stream_already_running(stream_name, process.pid)
 
     broadcast_id, stream_id, stream_key = ga.start_new_broadcast(stream_name)
     sleep(5)
