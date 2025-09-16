@@ -14,7 +14,9 @@ async def stream(stream_name: str = Query(None)):
 
     ga.google_auth()
     broadcast_id = sf.create_stream(stream_name, secrets)
-    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
+    return f'''Stream has been started! Watch the stream here: 
+                https://www.youtube.com/live/{broadcast_id}
+            '''
 
 @app.get("/test_multi_streams")
 async def test_multi_streams(stream_count: int = Query(None)):
