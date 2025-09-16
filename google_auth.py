@@ -166,3 +166,18 @@ def get_stream_status(stream_id):
     for item in response.get('items', []):
         if item['id'] == stream_id:
             print(item)
+
+def get_viewer_count(broadcast_id):
+    yt_client = google_auth()
+    print(f'Getting Viewer Count for Broadcast ID: {broadcast_id}')
+    response = yt_client.liveBroadcasts().list(
+        part="snippet,contentDetails,statistics",
+        id=broadcast_id
+    ).execute()
+
+    #print(response)
+    for item in response.get('items', []):
+        if item['id'] == broadcast_id:
+            viewer_count = item['statistics']['concurrentViewers']
+            print(f'Viewer Count is: {viewer_count}')
+            return viewer_count
