@@ -60,17 +60,20 @@ def ffmpeg_running(stream_name: str):
     return False
 
 def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
-    logger = pd.read_csv("stream_pid_logger.csv")
-    if pid is None:
-        with open('stream_pid_logger.csv', 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow([stream_name, "", broadcast_id])
-    else 
-        with open('stream_pid_logger.csv', 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow([stream_name, "", broadcast_id])
+    logger = pd.read_csv("stream_pid_logger.csv", dtype='string')
+    if len(logger) == 0:
+        logger = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
+    elif pid is None:
+        new_row = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
+        logger = pd.concat([logger, new_row])
+    else:
+        logger.loc[logger['stream_name'] == stream_name, 'pid'] = str(pid)
+    logger.to_csv("stream_pid_logger.csv", index=False)
+    return
+
 def create_broadcast(stream_name: str):
     broadcast_id, stream_key = ga.start_new_broadcast(stream_name)
+    log_stream_info(stream_name, broadcast_id)
     return broadcast_id, stream_key
 
 def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: dict):
@@ -94,7 +97,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     ], creationflags=0x00000008) # Creation flag allows process to start in background
     print(f"Started FFMPEG process with PID = {process.pid}")
 
-    log_stream_info(stream_name, broadcast_id, process.pid,)
+    log_stream_info(stream_name, broadcast_id, process.pid)
 
     sleep(10)
     # Transition broadcast from not live state to live state
