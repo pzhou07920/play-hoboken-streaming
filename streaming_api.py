@@ -23,7 +23,7 @@ async def stream(stream_name: str = Query(None)):
         return f"At broadcast limit of {secrets['broadcast_limit']}. Cannot start new broadcast."
 
     # check if stream is already running
-    if not sf.stream_already_running(stream_name, process.pid):
+    if not sf.stream_already_running(stream_name):
         broadcast_id = sf.create_stream(stream_name, secrets)
 
         print("Starting thread to close idle broadcast after 1 hour")

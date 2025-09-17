@@ -5,7 +5,7 @@ import csv
 import os
 
 def at_broadcast_limit(broadcast_limit: int):
-    with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
+    with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
         #csvfile.seek(0)
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
@@ -17,16 +17,16 @@ def at_broadcast_limit(broadcast_limit: int):
         else:
             return False
 
-def stream_already_running(stream_name: str, pid: int, broadcast_id: str = None):
+def stream_already_running(stream_name: str):
     # check if stream_pid_tracker.csv exists, if not create it and add header
     if os.path.exists('stream_pid_tracker.csv'):
         print("stream_pid_tracker.csv exists!")
     else:
         with open('stream_pid_tracker.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['stream_name', 'pid'])
+            writer.writerow(['stream_name', 'pid', 'broadcast_id'])
 
-    with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
+    with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
         # Check if the stream_name already exists in the csv file
         #csvfile.seek(0)
         reader = csv.reader(csvfile)
