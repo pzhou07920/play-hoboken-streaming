@@ -141,11 +141,10 @@ def start_new_broadcast(stream_title):
     stream_id = start_yt_livestream()
     bind_broadcast_to_stream(broadcast_id, stream_id)
     stream_key = get_streamkey(stream_id)
-    return broadcast_id, stream_id, stream_key
+    return broadcast_id, stream_key
 
-def broadcast_go_live(broadcast_id, stream_id):
+def broadcast_go_live(broadcast_id):
     print(f"Going live with broadcast: {broadcast_id}")
-    get_stream_status(stream_id)
     response = yt_client.liveBroadcasts().transition(
         part="id,snippet,contentDetails,status",
         broadcastStatus='live',

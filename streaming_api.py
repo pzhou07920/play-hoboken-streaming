@@ -23,21 +23,22 @@ async def stream(stream_name: str = Query(None)):
         return f"At broadcast limit of {secrets['broadcast_limit']}. Cannot start new broadcast."
 
     # check if stream is already running
-    if not sf.stream_already_running(stream_name, process.pid):
-        broadcast_id = sf.create_stream(stream_name, secrets)
-
-        print("Starting thread to close idle broadcast after 1 hour")
+    if not sf.broadcast_exists(stream_name):
+        broadcast_id, stream_key = sf.create_broadcast(stream_name)
+        print("Starting thread to close idle broadcast after 15 minutes")
+        print(broadcast_id)
         thread = threading.Thread(target=sf.close_idle_broadcast, args=(broadcast_id,))
         thread.start()
-
-        return f'''Stream has been started! Watch the stream here: 
-                https://www.youtube.com/live/{broadcast_id}
-                '''
     else:
-        broadcast_id = sf.get_running_stream(stream_name)
-        return f'''Stream {stream_name} is already running. Watch the stream here: 
-                https://www.youtube.com/live/{broadcast_id}
-                '''
+        broadcast_id = sf.get_running_broadcast(stream_name)
+    
+    if not sf.ffmpeg_running(stream_name):
+        broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_key, secrets)
+    else:
+        return f"Stream {stream_name} is already running. Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
+    
+    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
+
 
 @app.get("/test_multi_streams")
 async def test_multi_streams(stream_count: int = Query(None)):
@@ -51,7 +52,7 @@ async def test_multi_streams(stream_count: int = Query(None)):
     for stream_name in secrets['stream_names']:
         if count < stream_count:
             print(f"Starting stream: {stream_name}")
-            broadcast_id = sf.create_stream(stream_name, secrets)
+            broadcast_id = sf.start_ffmpeg(stream_name, secrets)
             count += 1
             sleep(20)
     print(f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}")
