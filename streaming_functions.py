@@ -5,6 +5,14 @@ import csv
 import os
 
 def at_broadcast_limit(broadcast_limit: int):
+    # check if stream_pid_tracker.csv exists, if not create it and add header
+    if os.path.exists('stream_pid_tracker.csv'):
+        print("stream_pid_tracker.csv exists!")
+    else:
+        with open('stream_pid_tracker.csv', 'x', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['stream_name', 'pid', 'broadcast_id'])
+
     with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
         #csvfile.seek(0)
         reader = csv.reader(csvfile)
@@ -18,14 +26,6 @@ def at_broadcast_limit(broadcast_limit: int):
             return False
 
 def stream_already_running(stream_name: str):
-    # check if stream_pid_tracker.csv exists, if not create it and add header
-    if os.path.exists('stream_pid_tracker.csv'):
-        print("stream_pid_tracker.csv exists!")
-    else:
-        with open('stream_pid_tracker.csv', 'x', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(['stream_name', 'pid', 'broadcast_id'])
-
     with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
         # Check if the stream_name already exists in the csv file
         #csvfile.seek(0)
@@ -43,9 +43,8 @@ def get_running_stream(stream_name: str):
             next(reader)  # Skip header
             for row in reader:
                 if row[0] == stream_name:
-                    pid = row[2]
-                    broadcast_id = row[3]
-                    return stream_name, pid, broadcast_id
+                    broadcast_id = row[2]
+                    return broadcast_id
     return None
 
 def log_stream_info(stream_name: str, pid: int, broadcast_id: str):
@@ -85,7 +84,7 @@ def create_stream(stream_name: str, secrets: dict):
 
     print("sleeping...")
     sleep(10)
-    ga.broadcast_go_live(broadcast_id, stream_id, broadcast_id)
+    ga.broadcast_go_live(broadcast_id)
     
     return broadcast_id
 

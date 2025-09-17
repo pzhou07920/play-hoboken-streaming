@@ -26,18 +26,15 @@ async def stream(stream_name: str = Query(None)):
     if not sf.stream_already_running(stream_name):
         broadcast_id = sf.create_stream(stream_name, secrets)
 
-        print("Starting thread to close idle broadcast after 1 hour")
+        print("Starting thread to close idle broadcast after 15 minutes")
+        print(broadcast_id)
         thread = threading.Thread(target=sf.close_idle_broadcast, args=(broadcast_id,))
         thread.start()
 
-        return f'''Stream has been started! Watch the stream here: 
-                https://www.youtube.com/live/{broadcast_id}
-                '''
+        return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
     else:
         broadcast_id = sf.get_running_stream(stream_name)
-        return f'''Stream {stream_name} is already running. Watch the stream here: 
-                https://www.youtube.com/live/{broadcast_id}
-                '''
+        return f"Stream {stream_name} is already running. Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
 
 @app.get("/test_multi_streams")
 async def test_multi_streams(stream_count: int = Query(None)):
