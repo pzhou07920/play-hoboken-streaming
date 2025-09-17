@@ -3,17 +3,18 @@ import google_auth as ga
 import subprocess
 import csv
 import os
+import pandas as pd
 
 def at_broadcast_limit(broadcast_limit: int):
-    # check if stream_pid_tracker.csv exists, if not create it and add header
-    if os.path.exists('stream_pid_tracker.csv'):
-        print("stream_pid_tracker.csv exists!")
+    # check if stream_pid_logger.csv exists, if not create it and add header
+    if os.path.exists('stream_pid_logger.csv'):
+        print("stream_pid_logger.csv exists!")
     else:
-        with open('stream_pid_tracker.csv', 'x', newline='') as csvfile:
+        with open('stream_pid_logger.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['stream_name', 'pid', 'broadcast_id'])
 
-    with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
+    with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
         #csvfile.seek(0)
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
@@ -25,8 +26,8 @@ def at_broadcast_limit(broadcast_limit: int):
         else:
             return False
 
-def stream_already_running(stream_name: str):
-    with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
+def broadcast_exists(stream_name: str):
+    with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
         # Check if the stream_name already exists in the csv file
         #csvfile.seek(0)
         reader = csv.reader(csvfile)
@@ -36,9 +37,9 @@ def stream_already_running(stream_name: str):
                 return True
     return False
 
-def get_running_stream(stream_name: str):
-    if os.path.exists('stream_pid_tracker.csv'):
-        with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
+def get_running_broadcast(stream_name: str):
+    if os.path.exists('stream_pid_logger.csv'):
+        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
             next(reader)  # Skip header
             for row in reader:
@@ -47,26 +48,39 @@ def get_running_stream(stream_name: str):
                     return broadcast_id
     return None
 
-def log_stream_info(stream_name: str, pid: int, broadcast_id: str):
-    with open('stream_pid_tracker.csv', 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow([stream_name, pid, broadcast_id])
+def ffmpeg_running(stream_name: str):
+    if os.path.exists('stream_pid_logger.csv'):
+        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)  # Skip header
+            for row in reader:
+                if row[0] == stream_name:
+                    if row[1] != '':
+                        return True
+    return False
 
-def create_stream(stream_name: str, secrets: dict):
+def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
+    logger = pd.read_csv("stream_pid_logger.csv")
+    if pid is None:
+        with open('stream_pid_logger.csv', 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([stream_name, "", broadcast_id])
+    else 
+        with open('stream_pid_logger.csv', 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([stream_name, "", broadcast_id])
+def create_broadcast(stream_name: str):
+    broadcast_id, stream_key = ga.start_new_broadcast(stream_name)
+    return broadcast_id, stream_key
+
+def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: dict):
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
-    # access_code = ac.generate_access_code()
 
-    broadcast_id, stream_id, stream_key = ga.start_new_broadcast(stream_name)
-    sleep(5)
-
+    # Starts the FFMPEG process in the background
     process = subprocess.Popen([
-        "Powershell.exe",
-        "Start-Process",
-        "-FilePath",
         "ffmpeg.exe",
-        "-ArgumentList",
-        "\"-i",
+        "-i",
         f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{stream_name}",
         "-b:v",
         "25k",
@@ -76,14 +90,14 @@ def create_stream(stream_name: str, secrets: dict):
         "aac",
         "-f",
         "flv",
-        f"rtmp://a.rtmp.youtube.com/live2/{stream_key}\""
-    ], shell=True)
+        f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
+    ], creationflags=0x00000008) # Creation flag allows process to start in background
     print(f"Started FFMPEG process with PID = {process.pid}")
 
-    log_stream_info(stream_name, process.pid, broadcast_id)
+    log_stream_info(stream_name, broadcast_id, process.pid,)
 
-    print("sleeping...")
     sleep(10)
+    # Transition broadcast from not live state to live state
     ga.broadcast_go_live(broadcast_id)
     
     return broadcast_id
@@ -100,7 +114,7 @@ def close_idle_broadcast(broadcast_id):
         else:
             print("There are no viewers watching the stream. Terminating broadcast.")
             # kill the process with process id = pid
-            with open('stream_pid_tracker.csv', 'r', newline='') as csvfile:
+            with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     if row[2] == broadcast_id:
