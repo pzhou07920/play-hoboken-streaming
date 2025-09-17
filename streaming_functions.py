@@ -108,3 +108,4 @@ def close_idle_broadcast(broadcast_id):
                         pid = int(row[1])
                         print(f"Killing process with PID = {pid}")
                         os.kill(pid, 9)  # force kill the process
+            ga.terminate_broadcast(broadcast_id)
