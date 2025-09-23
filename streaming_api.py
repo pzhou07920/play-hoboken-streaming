@@ -5,11 +5,19 @@ import streaming_functions as sf
 import google_auth as ga
 from time import sleep
 import threading
+from contextlib import asynccontextmanager
+import asyncio
 
 app = FastAPI()
 
 thread = threading.Thread(target=sf.broadcast_monitor(), daemon=True)
 thread.start()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run at startup
+    asyncio.create_task(sf.close_idle_broadcast())
+    yield
 
 @app.get("/stream")
 async def stream(stream_name: str = Query(None)):
