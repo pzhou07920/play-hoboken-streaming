@@ -71,6 +71,14 @@ def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
     logger.to_csv("stream_pid_logger.csv", index=False)
     return
 
+def delete_stream_info(broadcast_id: str):
+    logger = pd.read_csv("stream_pid_logger.csv", dtype='string')
+    # delete the row from logger if it matches the stream_name var
+    logger = logger[~(logger['broadcast_id'] == broadcast_id)]
+    logger.to_csv("stream_pid_logger.csv", index=False)
+    return
+
+
 def create_broadcast(stream_name: str):
     broadcast_id, stream_key = ga.start_new_broadcast(stream_name)
     log_stream_info(stream_name, broadcast_id)
@@ -106,12 +114,16 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     return broadcast_id
 
 def broadcast_monitor():
-    print("Checking for running broadcasts")
-    df = pd.read_csv("stream_pid_logger.csv", dtype='string')
-    for index, row in df.iterrows():
-        broadcast_id = row['broadcast_id']
-        close_idle_broadcast(broadcast_id)
-    sleep(30)  # check every 30 seconds
+    while(True):
+        print("Checking for running broadcasts")
+        if os.path.exists('stream_pid_logger.csv'):
+            df = pd.read_csv("stream_pid_logger.csv", dtype='string')
+            for index, row in df.iterrows():
+                broadcast_id = row['broadcast_id']
+                close_idle_broadcast(broadcast_id)
+        else:
+            print("stream_pid_logger.csv does not exist.")
+        sleep(30)  # check every 30 seconds
 
 def close_idle_broadcast(broadcast_id):
     viewer_count = 1
@@ -132,3 +144,4 @@ def close_idle_broadcast(broadcast_id):
                         print(f"Killing process with PID = {pid}")
                         os.kill(pid, 9)  # force kill the process
             ga.terminate_broadcast(broadcast_id)
+            delete_stream_info(broadcast_id)

@@ -8,7 +8,8 @@ import threading
 
 app = FastAPI()
 
-
+thread = threading.Thread(target=sf.broadcast_monitor(), daemon=True)
+thread.start()
 
 @app.get("/stream")
 async def stream(stream_name: str = Query(None)):
