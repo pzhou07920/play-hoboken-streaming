@@ -8,6 +8,8 @@ import threading
 
 app = FastAPI()
 
+
+
 @app.get("/stream")
 async def stream(stream_name: str = Query(None)):
     # read in secrets.yml
@@ -25,10 +27,6 @@ async def stream(stream_name: str = Query(None)):
     # check if stream is already running
     if not sf.broadcast_exists(stream_name):
         broadcast_id, stream_key = sf.create_broadcast(stream_name)
-        print("Starting thread to close idle broadcast after 15 minutes")
-        print(broadcast_id)
-        thread = threading.Thread(target=sf.close_idle_broadcast, args=(broadcast_id,))
-        thread.start()
     else:
         broadcast_id = sf.get_running_broadcast(stream_name)
     

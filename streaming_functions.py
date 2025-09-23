@@ -105,10 +105,17 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     
     return broadcast_id
 
+def broadcast_monitor():
+    print("Checking for running broadcasts")
+    print(broadcast_id)
+    close_idle_broadcast(broadcast_id)
+
 def close_idle_broadcast(broadcast_id):
     viewer_count = 1
     while(viewer_count > 0):
-        sleep(900)  # check every 15 minutes
+        #sleep(900)  # check every 15 minutes
+        print("sleeping for 10 seconds")
+        sleep(10) # testing
         viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
         print(f"Stream has been running for {runtime} minutes")
         print(f"Viewer count: {viewer_count}")
