@@ -176,7 +176,7 @@ def terminate_broadcast(broadcast_id):
     ).execute()
     
 def get_broadcast_info(broadcast_id):
-    google_auth()
+    #google_auth()
     print(f'Getting Viewer Count for Broadcast ID: {broadcast_id}')
     response = yt_client.liveBroadcasts().list(
         part="snippet,contentDetails,statistics",

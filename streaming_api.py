@@ -8,16 +8,15 @@ import threading
 from contextlib import asynccontextmanager
 import asyncio
 
-app = FastAPI()
 
-thread = threading.Thread(target=sf.broadcast_monitor(), daemon=True)
-thread.start()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Run at startup
-    asyncio.create_task(sf.close_idle_broadcast())
+    asyncio.create_task(sf.broadcast_monitor())
     yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/stream")
 async def stream(stream_name: str = Query(None)):

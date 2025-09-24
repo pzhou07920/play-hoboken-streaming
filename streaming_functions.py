@@ -4,6 +4,7 @@ import subprocess
 import csv
 import os
 import pandas as pd
+import asyncio
 
 def at_broadcast_limit(broadcast_limit: int):
     # check if stream_pid_logger.csv exists, if not create it and add header
@@ -113,7 +114,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     
     return broadcast_id
 
-def broadcast_monitor():
+async def broadcast_monitor():
     while(True):
         print("Checking for running broadcasts")
         if os.path.exists('stream_pid_logger.csv'):
@@ -123,7 +124,7 @@ def broadcast_monitor():
                 close_idle_broadcast(broadcast_id)
         else:
             print("stream_pid_logger.csv does not exist.")
-        sleep(30)  # check every 30 seconds
+        await asyncio.sleep(300)  # check every 30 seconds
 
 def close_idle_broadcast(broadcast_id):
     viewer_count = 1
