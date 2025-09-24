@@ -48,7 +48,7 @@ def start_yt_broadcast(stream_title):
     time_10_sec = datetime.timedelta(seconds=10)
     sched_time = (current_time + time_10_sec).isoformat()
     # logger.log(f'Current Time is {current_time}')
-    logger.log(f'Scheduled Time is {sched_time}')
+    # logger.log(f'Scheduled Time is {sched_time}')
     response = yt_client.liveBroadcasts().insert(
         part="snippet,status,contentDetails",
         body={
@@ -71,7 +71,7 @@ def start_yt_broadcast(stream_title):
 
     #logger.log(response)
     broadcast_id = response.get('id')
-    logger.log(f'Broadcast ID is: {broadcast_id}')
+    #logger.log(f'Broadcast ID is: {broadcast_id}')
     return broadcast_id
 
 def start_yt_livestream():
@@ -98,7 +98,7 @@ def start_yt_livestream():
 
     #logger.log(response)
     stream_key = response.get('id')
-    logger.log(f'Stream Key is: {stream_key}')
+    # logger.log(f'Stream Key is: {stream_key}')
     return stream_key
 
 def bind_broadcast_to_stream(broadcast_id, stream_id):
@@ -133,7 +133,7 @@ def get_streamkey(stream_id):
     for item in response.get('items', []):
         if item['id'] == stream_id:
             stream_key = item['cdn']['ingestionInfo']['streamName']
-            logger.log(f'Stream Key is: {stream_key}')
+            # logger.log(f'Stream Key is: {stream_key}')
             return stream_key
         
 def start_new_broadcast(stream_title):

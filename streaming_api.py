@@ -25,7 +25,7 @@ async def stream(stream_name: str = Query(None)):
         secrets = yaml.safe_load(f)
 
     stream_name = stream_name.lower().capitalize()
-    logger.log("capitalized stream_name " + stream_name)
+    # logger.log("capitalized stream_name " + stream_name)
 
     ga.google_auth()
 
