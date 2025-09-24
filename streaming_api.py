@@ -1,10 +1,9 @@
-from multiprocessing import process
+import logger
 from fastapi import FastAPI, Query
 import yaml
 import streaming_functions as sf
 import google_auth as ga
 from time import sleep
-import threading
 from contextlib import asynccontextmanager
 import asyncio
 
@@ -25,7 +24,7 @@ async def stream(stream_name: str = Query(None)):
         secrets = yaml.safe_load(f)
 
     stream_name = stream_name.lower().capitalize()
-    print("capitalized stream_name " + stream_name)
+    logger.log("capitalized stream_name " + stream_name)
 
     ga.google_auth()
 
@@ -53,13 +52,13 @@ async def test_multi_streams(stream_count: int = Query(None)):
         secrets = yaml.safe_load(f)
 
     ga.google_auth()
-    print(f"Testing {stream_count} streams")
+    logger.log(f"Testing {stream_count} streams")
     count = 0
     for stream_name in secrets['stream_names']:
         if count < stream_count:
-            print(f"Starting stream: {stream_name}")
+            logger.log(f"Starting stream: {stream_name}")
             broadcast_id = sf.start_ffmpeg(stream_name, secrets)
             count += 1
             sleep(20)
-    print(f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}")
+    logger.log(f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}")
     return "Multi-stream test completed."

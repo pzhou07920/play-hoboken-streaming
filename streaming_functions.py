@@ -1,3 +1,4 @@
+import logger
 from time import sleep
 import google_auth as ga
 import subprocess
@@ -9,7 +10,7 @@ import asyncio
 def at_broadcast_limit(broadcast_limit: int):
     # check if stream_pid_logger.csv exists, if not create it and add header
     if os.path.exists('stream_pid_logger.csv'):
-        print("stream_pid_logger.csv exists!")
+        logger.log("stream_pid_logger.csv exists!")
     else:
         with open('stream_pid_logger.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -20,9 +21,9 @@ def at_broadcast_limit(broadcast_limit: int):
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
         row_count = sum(1 for row in reader) - 1  # subtract 1 for header
-        print(f"Current number of broadcasts: {row_count}")
+        logger.log(f"Current number of broadcasts: {row_count}")
         if row_count >= broadcast_limit:
-            print(f"At broadcast limit of {broadcast_limit}. Cannot start new broadcast.")
+            logger.log(f"At broadcast limit of {broadcast_limit}. Cannot start new broadcast.")
             return True
         else:
             return False
@@ -34,7 +35,7 @@ def broadcast_exists(stream_name: str):
         reader = csv.reader(csvfile)
         for row in reader:
             if row[0] == stream_name:
-                print(f"Stream {row[0]} with PID {row[1]} and Broadcast ID {row[2]} already exists.")
+                logger.log(f"Stream {row[0]} with PID {row[1]} and Broadcast ID {row[2]} already exists.")
                 return True
     return False
 
@@ -104,7 +105,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
         "flv",
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
     ], creationflags=0x00000008) # Creation flag allows process to start in background
-    print(f"Started FFMPEG process with PID = {process.pid}")
+    logger.log(f"Started FFMPEG process with PID = {process.pid}")
 
     log_stream_info(stream_name, broadcast_id, process.pid)
 
@@ -116,33 +117,33 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
 
 async def broadcast_monitor():
     while(True):
-        print("Checking for running broadcasts")
+        logger.log("Checking for running broadcasts")
         if os.path.exists('stream_pid_logger.csv'):
             df = pd.read_csv("stream_pid_logger.csv", dtype='string')
             for index, row in df.iterrows():
                 broadcast_id = row['broadcast_id']
                 close_idle_broadcast(broadcast_id)
         else:
-            print("stream_pid_logger.csv does not exist.")
+            logger.log("stream_pid_logger.csv does not exist.")
         await asyncio.sleep(300)  # check every 30 seconds
 
 def close_idle_broadcast(broadcast_id):
     viewer_count = 1
     while(viewer_count > 0):
         viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
-        print(f"Stream has been running for {runtime} minutes")
-        print(f"Viewer count: {viewer_count}")
+        logger.log(f"Stream has been running for {runtime} minutes")
+        logger.log(f"Viewer count: {viewer_count}")
         if viewer_count > 0:
-            print(f"There are currently {viewer_count} viewers watching the stream.")
+            logger.log(f"There are currently {viewer_count} viewers watching the stream.")
         else:
-            print("There are no viewers watching the stream. Terminating broadcast.")
+            logger.log("There are no viewers watching the stream. Terminating broadcast.")
             # kill the process with process id = pid
             with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     if row[2] == broadcast_id:
                         pid = int(row[1])
-                        print(f"Killing process with PID = {pid}")
+                        logger.log(f"Killing process with PID = {pid}")
                         os.kill(pid, 9)  # force kill the process
             ga.terminate_broadcast(broadcast_id)
             delete_stream_info(broadcast_id)
