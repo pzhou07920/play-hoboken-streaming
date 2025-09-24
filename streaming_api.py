@@ -1,5 +1,6 @@
 import logger
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
 import yaml
 import streaming_functions as sf
 import google_auth as ga
@@ -7,7 +8,7 @@ from time import sleep
 from contextlib import asynccontextmanager
 import asyncio
 
-
+ga.google_auth()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/stream")
+@app.get("/stream", response_class=HTMLResponse)
 async def stream(stream_name: str = Query(None)):
     # read in secrets.yml
     with open("secrets.yml", "r") as f:
@@ -42,7 +43,7 @@ async def stream(stream_name: str = Query(None)):
     else:
         return f"Stream {stream_name} is already running. Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
     
-    return f"Stream has been started! Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
+    return f"Stream has been started! Watch the stream here: <a href='https://www.youtube.com/live/{broadcast_id}'>Broadcast Link</a>"
 
 
 @app.get("/test_multi_streams")

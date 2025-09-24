@@ -92,7 +92,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
 
     # Starts the FFMPEG process in the background
     process = subprocess.Popen([
-        "ffmpeg.exe",
+        "C:\ProgramData\chocolatey\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe",
         "-i",
         f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{stream_name}",
         "-b:v",
@@ -106,7 +106,6 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
     ], creationflags=0x00000008) # Creation flag allows process to start in background
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
-
     log_stream_info(stream_name, broadcast_id, process.pid)
 
     sleep(10)
@@ -125,25 +124,23 @@ async def broadcast_monitor():
                 close_idle_broadcast(broadcast_id)
         else:
             logger.log("stream_pid_logger.csv does not exist.")
-        await asyncio.sleep(300)  # check every 30 seconds
+        await asyncio.sleep(300)  # check every 5 minutes
 
 def close_idle_broadcast(broadcast_id):
-    viewer_count = 1
-    while(viewer_count > 0):
-        viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
-        logger.log(f"Stream has been running for {runtime} minutes")
-        logger.log(f"Viewer count: {viewer_count}")
-        if viewer_count > 0:
-            logger.log(f"There are currently {viewer_count} viewers watching the stream.")
-        else:
-            logger.log("There are no viewers watching the stream. Terminating broadcast.")
-            # kill the process with process id = pid
-            with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
-                reader = csv.reader(csvfile)
-                for row in reader:
-                    if row[2] == broadcast_id:
-                        pid = int(row[1])
-                        logger.log(f"Killing process with PID = {pid}")
-                        os.kill(pid, 9)  # force kill the process
-            ga.terminate_broadcast(broadcast_id)
-            delete_stream_info(broadcast_id)
+    viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
+    logger.log(f"Stream has been running for {runtime} minutes")
+    logger.log(f"Viewer count: {viewer_count}")
+    if viewer_count > 0:
+        logger.log(f"There are currently {viewer_count} viewers watching the stream.")
+    else:
+        logger.log("There are no viewers watching the stream. Terminating broadcast.")
+        # kill the process with process id = pid
+        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                if row[2] == broadcast_id:
+                    pid = int(row[1])
+                    logger.log(f"Killing process with PID = {pid}")
+                    os.kill(pid, 9)  # force kill the process
+        ga.terminate_broadcast(broadcast_id)
+        delete_stream_info(broadcast_id)
