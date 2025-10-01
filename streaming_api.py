@@ -7,6 +7,7 @@ import google_auth as ga
 from time import sleep
 from contextlib import asynccontextmanager
 import asyncio
+from fastapi.middleware.cors import CORSMiddleware
 
 ga.google_auth()
 
@@ -17,6 +18,18 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "https://stream.playhoboken.com",  # WordPress website
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,             # allowed domains
+    allow_credentials=True,
+    allow_methods=["*"],               # or limit: ["GET", "POST"]
+    allow_headers=["*"],               # or specify: ["Content-Type", "Authorization"]
+)
 
 @app.get("/stream", response_class=HTMLResponse)
 async def stream(stream_name: str = Query(None)):
@@ -45,6 +58,9 @@ async def stream(stream_name: str = Query(None)):
     
     return f"Stream has been started! Watch the stream here: <a href='https://www.youtube.com/live/{broadcast_id}'>Broadcast Link</a>"
 
+@app.options('/stream', response_class=HTMLResponse)
+async def stream_options():
+    return None
 
 @app.get("/test_multi_streams")
 async def test_multi_streams(stream_count: int = Query(None)):

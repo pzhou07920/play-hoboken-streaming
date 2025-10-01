@@ -10,7 +10,7 @@ import asyncio
 def at_broadcast_limit(broadcast_limit: int):
     # check if stream_pid_logger.csv exists, if not create it and add header
     if os.path.exists('stream_pid_logger.csv'):
-        # logger.log("stream_pid_logger.csv exists!")
+        logger.log("stream_pid_logger.csv exists!")
     else:
         with open('stream_pid_logger.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
