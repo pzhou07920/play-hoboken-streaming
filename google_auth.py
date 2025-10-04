@@ -103,8 +103,8 @@ def start_yt_livestream():
 
 def bind_broadcast_to_stream(broadcast_id, stream_id):
     #yt_client = google_auth()
-    #broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
-    #stream_id = start_yt_livestream(yt_client)
+    # broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
+    # stream_id = start_yt_livestream(yt_client)
     #broadcast_id = "b7k7x1l6o4c"
 
     logger.log(f'Binding Broadcast {broadcast_id} to Stream {stream_id}')

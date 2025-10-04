@@ -104,10 +104,14 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
         "-f",
         "flv",
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
-    ], creationflags=0x00000008) # Creation flag allows process to start in background
+    ], stderr=subprocess.STDOUT, creationflags=0x00000008) # Creation flag allows process to start in background
+    # sleep(20)
+    # process.poll()
+    print(process)
+    logger.log(f"error code: {process.returncode}")
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
-
+# ffmpeg.exe -i "rtsp://admin:spot9666@192.168.50.215/Preview_01_main" -b:v 25k -vcodec copy -acodec aac -f flv "rtmp://a.rtmp.youtube.com/live2/jk9h-z547-97uv-q42j-0944"
     sleep(10)
     # Transition broadcast from not live state to live state
     ga.broadcast_go_live(broadcast_id)

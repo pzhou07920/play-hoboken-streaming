@@ -54,9 +54,9 @@ async def stream(stream_name: str = Query(None)):
     if not sf.ffmpeg_running(stream_name):
         broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_key, secrets)
     else:
-        return f"Stream {stream_name} is already running. Watch the stream here: https://www.youtube.com/live/{broadcast_id}"
+        return f"https://www.youtube.com/live/{broadcast_id}"
     
-    return f"Stream has been started! Watch the stream here: <a href='https://www.youtube.com/live/{broadcast_id}'>Broadcast Link</a>"
+    return f"https://www.youtube.com/live/{broadcast_id}"
 
 @app.options('/stream', response_class=HTMLResponse)
 async def stream_options():
