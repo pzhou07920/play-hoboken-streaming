@@ -116,10 +116,6 @@ def bind_broadcast_to_stream(broadcast_id, stream_id):
 
     #logger.log(f"Bind response: {response}")
 
-#bind_broadcast_to_stream()
-# start_yt_livestream( )
-#start_yt_broadcast("Test Stream from API") 
-
 def get_streamkey(stream_id):
     #yt_client = google_auth()
     logger.log(f'Getting Stream Key for Stream ID: {stream_id}')
@@ -152,6 +148,24 @@ def broadcast_go_live(broadcast_id):
         id=broadcast_id,
     ).execute()
    #"https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?part=id,snippet,contentDetails,status&broadcastStatus=live&id=$BROADCAST_ID"
+
+def broadcast_is_live(broadcast_id):
+    logger.log(f'Checking if Broadcast ID: {broadcast_id} is live')
+    response = yt_client.liveBroadcasts().list(
+        part="snippet,contentDetails,status",
+        id=broadcast_id
+    ).execute()
+
+    #logger.log(response)
+    for item in response.get('items', []):
+        if item['id'] == broadcast_id:
+            status = item['status']['lifeCycleStatus']
+            logger.log(f'Broadcast Status is: {status}')
+            if status == 'live':
+                return True
+            else:
+                return False
+    return False
 
 def get_stream_status(stream_id):
     #yt_client = google_auth()
@@ -200,3 +214,20 @@ def get_broadcast_info(broadcast_id):
             logger.log(f'Viewer Count is: {viewer_count}')
     return int(viewer_count), runtime
 
+def get_all_broadcasts():
+    #google_auth()
+    logger.log('Getting All Broadcasts')
+    response = yt_client.liveBroadcasts().list(
+        part="snippet,contentDetails,status",
+        mine=True,
+        maxResults=25
+    ).execute()
+
+    broadcasts = []
+    for item in response.get('items', []):
+        broadcast_id = item['id']
+        title = item['snippet']['title']
+        status = item['status']['lifeCycleStatus']
+        broadcasts.append({'id': broadcast_id, 'title': title, 'status': status})
+        logger.log(f'Broadcast ID: {broadcast_id} | Title: {title} | Status: {status}')
+    return broadcasts

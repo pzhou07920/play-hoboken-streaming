@@ -6,6 +6,7 @@ import csv
 import os
 import pandas as pd
 import asyncio
+import requests
 
 def at_broadcast_limit(broadcast_limit: int):
     # check if stream_pid_logger.csv exists, if not create it and add header
@@ -28,15 +29,23 @@ def at_broadcast_limit(broadcast_limit: int):
         else:
             return False
 
-def broadcast_exists(stream_name: str):
-    with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
-        # Check if the stream_name already exists in the csv file
-        #csvfile.seek(0)
-        reader = csv.reader(csvfile)
-        for row in reader:
-            if row[0] == stream_name:
-                logger.log(f"Stream {row[0]} with PID {row[1]} and Broadcast ID {row[2]} already exists.")
-                return True
+def stream_is_live(stream_name: str):
+    # make an API request to localhost/stream_name and retrieve the broadcast_id from the response youtube url
+    redirect_url = f"https://stream2.playhoboken.com/{stream_name}"
+    response = requests.get(redirect_url, verify=False)
+    if response.status_code == 200:
+        redirect_url = response.url
+        logger.log(f"Redirect URL: {redirect_url}")
+        path_segments = redirect_url.split('/')
+        broadcast_id = path_segments[-1]  # The last segment is the broadcast ID
+        if ga.broadcast_is_live(broadcast_id):
+            logger.log(f"Stream {stream_name} is live.")
+            return True
+        else:
+            logger.log(f"Stream {stream_name} is not live.")
+            return False
+    else:
+        logger.log(f"Did not receive a 200 from {redirect_url} | Received status code: {response.status_code}")
     return False
 
 def get_running_broadcast(stream_name: str):
@@ -92,9 +101,9 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
 
     # Starts the FFMPEG process in the background
     process = subprocess.Popen([
-        "C:\ProgramData\chocolatey\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe",
+        "C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe",
         "-i",
-        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{stream_name}",
+        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{secrets['camera_stream_mapping'][stream_name]}",
         "-b:v",
         "25k",
         "-vcodec",
@@ -121,13 +130,11 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
 async def broadcast_monitor():
     while(True):
         logger.log("Checking for running broadcasts")
-        if os.path.exists('stream_pid_logger.csv'):
-            df = pd.read_csv("stream_pid_logger.csv", dtype='string')
-            for index, row in df.iterrows():
-                broadcast_id = row['broadcast_id']
+        broadcasts = ga.get_all_broadcasts()
+        for broadcast in broadcasts:
+            broadcast_id = broadcast['id']
+            if ga.broadcast_is_live(broadcast_id):
                 close_idle_broadcast(broadcast_id)
-        else:
-            logger.log("stream_pid_logger.csv does not exist.")
         await asyncio.sleep(300)  # check every 5 minutes
 
 def close_idle_broadcast(broadcast_id):
@@ -148,3 +155,21 @@ def close_idle_broadcast(broadcast_id):
                     os.kill(pid, 9)  # force kill the process
         ga.terminate_broadcast(broadcast_id)
         delete_stream_info(broadcast_id)
+
+def update_nginx_stream_urls(stream_name: str, broadcast_id: str):
+    stream_urls_path = "C:\\nginx-1.29.1\\nginx-1.29.1\\conf\\stream_urls.conf"
+    youtube_url = f"https://www.youtube.com/embed/{broadcast_id}"
+    with open(stream_urls_path, "r") as f:
+        lines = f.readlines()
+    with open(stream_urls_path, "w") as f:
+        for line in lines:
+            parts = line.strip().split()
+            if parts[1] == '$' + stream_name:
+                f.write(f"set ${stream_name} {youtube_url};\n")
+            else:
+                f.write(line)
+
+def reload_nginx():
+    nginx_dir = "C:\\nginx-1.29.1\\nginx-1.29.1"
+    subprocess.Popen([f"{nginx_dir}\\nginx.exe", "-s", "reload"], cwd=nginx_dir)
+    logger.log("Reloaded NGINX configuration")

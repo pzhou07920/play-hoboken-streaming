@@ -37,27 +37,31 @@ async def stream(stream_name: str = Query(None)):
     with open("secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
 
-    stream_name = stream_name.lower().capitalize()
+    #stream_name = stream_name.lower().capitalize()
     # logger.log("capitalized stream_name " + stream_name)
 
     ga.google_auth()
 
-    if sf.at_broadcast_limit(secrets['broadcast_limit']):
-        return f"At broadcast limit of {secrets['broadcast_limit']}. Cannot start new broadcast."
+    # if sf.at_broadcast_limit(secrets['broadcast_limit']):
+    #     return f"At broadcast limit of {secrets['broadcast_limit']}. Cannot start new broadcast."
 
     # check if stream is already running
-    if not sf.broadcast_exists(stream_name):
+    if not sf.stream_is_live(stream_name):
         broadcast_id, stream_key = sf.create_broadcast(stream_name)
-    else:
-        broadcast_id = sf.get_running_broadcast(stream_name)
-    
-    if not sf.ffmpeg_running(stream_name):
         broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_key, secrets)
-    else:
-        return f"https://www.youtube.com/live/{broadcast_id}"
+        sf.update_nginx_stream_urls(stream_name, broadcast_id)
+        sf.reload_nginx()
+    # else:
+    #     broadcast_id = sf.get_running_broadcast(stream_name)
+    
+    #if not sf.ffmpeg_running(stream_name):
+
+    #else:
+    #    return f"https://www.youtube.com/live/{broadcast_id}"
     
     return f"https://www.youtube.com/live/{broadcast_id}"
 
+# To allow the initial CORS OPTIONS call to succeed
 @app.options('/stream', response_class=HTMLResponse)
 async def stream_options():
     return None
