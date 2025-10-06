@@ -18,7 +18,6 @@ def at_broadcast_limit(broadcast_limit: int):
             writer.writerow(['stream_name', 'pid', 'broadcast_id'])
 
     with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
-        #csvfile.seek(0)
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
         row_count = sum(1 for row in reader) - 1  # subtract 1 for header
@@ -30,7 +29,7 @@ def at_broadcast_limit(broadcast_limit: int):
             return False
 
 def stream_is_live(stream_name: str):
-    # make an API request to localhost/stream_name and retrieve the broadcast_id from the response youtube url
+    # make an API request to nginx/stream_name and retrieve the broadcast_id from the response youtube url
     redirect_url = f"https://stream2.playhoboken.com/{stream_name}"
     response = requests.get(redirect_url, verify=False)
     if response.status_code == 200:
@@ -47,17 +46,6 @@ def stream_is_live(stream_name: str):
     else:
         logger.log(f"Did not receive a 200 from {redirect_url} | Received status code: {response.status_code}")
     return False
-
-def get_running_broadcast(stream_name: str):
-    if os.path.exists('stream_pid_logger.csv'):
-        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader)  # Skip header
-            for row in reader:
-                if row[0] == stream_name:
-                    broadcast_id = row[2]
-                    return broadcast_id
-    return None
 
 def ffmpeg_running(stream_name: str):
     if os.path.exists('stream_pid_logger.csv'):
@@ -100,6 +88,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     STREAM_PASSWORD = secrets['stream_password']
 
     # Starts the FFMPEG process in the background
+    # Sample FFMPEG command: # ffmpeg.exe -i "rtsp://admin:spot9666@192.168.50.215/Preview_01_main" -b:v 25k -vcodec copy -acodec aac -f flv "rtmp://a.rtmp.youtube.com/live2/jk9h-z547-97uv-q42j-0944"
     process = subprocess.Popen([
         "C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe",
         "-i",
@@ -114,14 +103,13 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
         "flv",
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
     ], stderr=subprocess.STDOUT, creationflags=0x00000008) # Creation flag allows process to start in background
-    # sleep(20)
-    # process.poll()
+
     print(process)
     logger.log(f"error code: {process.returncode}")
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
-# ffmpeg.exe -i "rtsp://admin:spot9666@192.168.50.215/Preview_01_main" -b:v 25k -vcodec copy -acodec aac -f flv "rtmp://a.rtmp.youtube.com/live2/jk9h-z547-97uv-q42j-0944"
-    sleep(10)
+    
+    # sleep(10)
     # Transition broadcast from not live state to live state
     ga.broadcast_go_live(broadcast_id)
     
@@ -143,7 +131,7 @@ def close_idle_broadcast(broadcast_id):
     logger.log(f"Viewer count: {viewer_count}")
     if viewer_count > 0:
         logger.log(f"There are currently {viewer_count} viewers watching the stream.")
-    else:
+    elif runtime > 10:
         logger.log("There are no viewers watching the stream. Terminating broadcast.")
         # kill the process with process id = pid
         with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
@@ -157,7 +145,7 @@ def close_idle_broadcast(broadcast_id):
         delete_stream_info(broadcast_id)
 
 def update_nginx_stream_urls(stream_name: str, broadcast_id: str):
-    stream_urls_path = "C:\\nginx-1.29.1\\nginx-1.29.1\\conf\\stream_urls.conf"
+    stream_urls_path = "C:\\nginx-1.29.1\\conf\\stream_urls.conf"
     youtube_url = f"https://www.youtube.com/embed/{broadcast_id}"
     with open(stream_urls_path, "r") as f:
         lines = f.readlines()
@@ -170,6 +158,6 @@ def update_nginx_stream_urls(stream_name: str, broadcast_id: str):
                 f.write(line)
 
 def reload_nginx():
-    nginx_dir = "C:\\nginx-1.29.1\\nginx-1.29.1"
+    nginx_dir = "C:\\\nginx-1.29.1"
     subprocess.Popen([f"{nginx_dir}\\nginx.exe", "-s", "reload"], cwd=nginx_dir)
     logger.log("Reloaded NGINX configuration")

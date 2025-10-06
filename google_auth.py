@@ -41,14 +41,11 @@ def google_auth():
     return
 
 def start_yt_broadcast(stream_title):
-    #yt_client = google_auth()
-
     logger.log(f'Starting YouTube Broadcast with title: {stream_title}')
     current_time = datetime.datetime.now(datetime.timezone.utc)
     time_10_sec = datetime.timedelta(seconds=10)
     sched_time = (current_time + time_10_sec).isoformat()
-    # logger.log(f'Current Time is {current_time}')
-    # logger.log(f'Scheduled Time is {sched_time}')
+
     response = yt_client.liveBroadcasts().insert(
         part="snippet,status,contentDetails",
         body={
@@ -69,14 +66,10 @@ def start_yt_broadcast(stream_title):
         }
     ).execute()
 
-    #logger.log(response)
     broadcast_id = response.get('id')
-    #logger.log(f'Broadcast ID is: {broadcast_id}')
     return broadcast_id
 
 def start_yt_livestream():
-    #yt_client = google_auth()
-
     logger.log('Starting YouTube Live Stream')
     response = yt_client.liveStreams().insert(
         part="snippet,cdn,contentDetails",
@@ -102,10 +95,6 @@ def start_yt_livestream():
     return stream_key
 
 def bind_broadcast_to_stream(broadcast_id, stream_id):
-    #yt_client = google_auth()
-    # broadcast_id = start_yt_broadcast(yt_client, "Test Bind")
-    # stream_id = start_yt_livestream(yt_client)
-    #broadcast_id = "b7k7x1l6o4c"
 
     logger.log(f'Binding Broadcast {broadcast_id} to Stream {stream_id}')
     response = yt_client.liveBroadcasts().bind(

@@ -37,6 +37,9 @@ async def stream(stream_name: str = Query(None)):
     with open("secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
 
+    stream_name = stream_name.lower()
+    if stream_name not in secrets['camera_stream_mapping']:
+        return f"Invalid stream_name query parameter. Query parameter ${stream_name} was passed"
     #stream_name = stream_name.lower().capitalize()
     # logger.log("capitalized stream_name " + stream_name)
 
