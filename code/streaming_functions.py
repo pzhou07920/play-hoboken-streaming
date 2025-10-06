@@ -144,8 +144,8 @@ def close_idle_broadcast(broadcast_id):
         ga.terminate_broadcast(broadcast_id)
         delete_stream_info(broadcast_id)
 
-def update_nginx_stream_urls(stream_name: str, broadcast_id: str):
-    stream_urls_path = "C:\\nginx-1.29.1\\conf\\stream_urls.conf"
+def update_nginx_stream_urls(nginx_path: str, stream_name: str, broadcast_id: str):
+    stream_urls_path = f"{nginx_path}\\conf\\stream_urls.conf"
     youtube_url = f"https://www.youtube.com/embed/{broadcast_id}"
     with open(stream_urls_path, "r") as f:
         lines = f.readlines()
@@ -157,7 +157,6 @@ def update_nginx_stream_urls(stream_name: str, broadcast_id: str):
             else:
                 f.write(line)
 
-def reload_nginx():
-    nginx_dir = "C:\\\nginx-1.29.1"
-    subprocess.Popen([f"{nginx_dir}\\nginx.exe", "-s", "reload"], cwd=nginx_dir)
+def reload_nginx(nginx_path: str = None):
+    subprocess.Popen([f"{nginx_path}\\nginx.exe", "-s", "reload"], cwd=nginx_path)
     logger.log("Reloaded NGINX configuration")

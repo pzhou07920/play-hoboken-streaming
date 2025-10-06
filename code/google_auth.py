@@ -15,10 +15,10 @@ def google_auth():
     API_VERSION = "v3"
 
     creds = None
-    if os.path.exists('token.json'):
+    if os.path.exists('config/token.json'):
         try:
             logger.log("Loading credentials from token.json")
-            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+            creds = Credentials.from_authorized_user_file('config/token.json', SCOPES)
             creds.refresh(Request())
         except google.auth.exceptions.RefreshError as error:
             # if refresh token fails, reset creds to none.
@@ -30,11 +30,11 @@ def google_auth():
             creds.refresh(Request())
         else:
             logger.log("Fetching new token...")
-            flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', scopes=SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file('config/client_secret.json', scopes=SCOPES)
             creds = flow.run_local_server(port=8001, prompt='consent')
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            logger.log("Saving credentials to token.json")
+        with open('config/token.json', 'w') as token:
+            logger.log("Saving credentials to config/token.json")
             token.write(creds.to_json())
     global yt_client
     yt_client = build(API_SERVICE_NAME, API_VERSION, credentials = creds)
@@ -150,7 +150,7 @@ def broadcast_is_live(broadcast_id):
         if item['id'] == broadcast_id:
             status = item['status']['lifeCycleStatus']
             logger.log(f'Broadcast Status is: {status}')
-            if status == 'live':
+            if status == 'active':
                 return True
             else:
                 return False
@@ -208,7 +208,7 @@ def get_all_broadcasts():
     logger.log('Getting All Broadcasts')
     response = yt_client.liveBroadcasts().list(
         part="snippet,contentDetails,status",
-        mine=True,
+        broadcastStatus='active',
         maxResults=25
     ).execute()
 

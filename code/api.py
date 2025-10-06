@@ -14,6 +14,9 @@ ga.google_auth()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Run at startup
+
+    # Start the broadcast monitor in the background
+    # This function closes streams that are not being watched
     asyncio.create_task(sf.broadcast_monitor())
     yield
 
@@ -34,45 +37,36 @@ app.add_middleware(
 @app.get("/stream", response_class=HTMLResponse)
 async def stream(stream_name: str = Query(None)):
     # read in secrets.yml
-    with open("secrets.yml", "r") as f:
+    with open("config/secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
 
     stream_name = stream_name.lower()
     if stream_name not in secrets['camera_stream_mapping']:
         return f"Invalid stream_name query parameter. Query parameter ${stream_name} was passed"
-    #stream_name = stream_name.lower().capitalize()
-    # logger.log("capitalized stream_name " + stream_name)
 
     ga.google_auth()
 
-    # if sf.at_broadcast_limit(secrets['broadcast_limit']):
-    #     return f"At broadcast limit of {secrets['broadcast_limit']}. Cannot start new broadcast."
-
     # check if stream is already running
     if not sf.stream_is_live(stream_name):
+        nginx_path = secrets['nginx_path']
         broadcast_id, stream_key = sf.create_broadcast(stream_name)
         broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_key, secrets)
-        sf.update_nginx_stream_urls(stream_name, broadcast_id)
-        sf.reload_nginx()
-    # else:
-    #     broadcast_id = sf.get_running_broadcast(stream_name)
-    
-    #if not sf.ffmpeg_running(stream_name):
+        sf.update_nginx_stream_urls(nginx_path, stream_name, broadcast_id)
+        sf.reload_nginx(nginx_path)
 
-    #else:
-    #    return f"https://www.youtube.com/live/{broadcast_id}"
-    
     return f"https://www.youtube.com/live/{broadcast_id}"
 
 # To allow the initial CORS OPTIONS call to succeed
+# This is required to allow cross-origin requests from the WordPress site
 @app.options('/stream', response_class=HTMLResponse)
 async def stream_options():
     return None
 
+# Testing endpoint
 @app.get("/test_multi_streams")
 async def test_multi_streams(stream_count: int = Query(None)):
     # read in secrets.yml
-    with open("secrets.yml", "r") as f:
+    with open("config/secrets.yml", "r") as f:
         secrets = yaml.safe_load(f)
 
     ga.google_auth()
