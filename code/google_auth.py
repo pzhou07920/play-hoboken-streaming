@@ -122,7 +122,7 @@ def get_streamkey(stream_id):
             return stream_key
         
 def start_new_broadcast(stream_title):
-    #yt_client = google_auth()
+    stream_title = stream_title.replace('_', ' ').capitalize()
     broadcast_id = start_yt_broadcast(stream_title)
     stream_id = start_yt_livestream()
     bind_broadcast_to_stream(broadcast_id, stream_id)
@@ -150,7 +150,7 @@ def broadcast_is_live(broadcast_id):
         if item['id'] == broadcast_id:
             status = item['status']['lifeCycleStatus']
             logger.log(f'Broadcast Status is: {status}')
-            if status == 'active':
+            if status == 'live':
                 return True
             else:
                 return False

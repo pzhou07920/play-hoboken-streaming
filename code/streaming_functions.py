@@ -87,12 +87,15 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
 
+    camera_name = secrets['camera_stream_mapping'][stream_name]
+    logger.log(f"Starting FFMPEG for stream: {stream_name} | Camera Name: {camera_name}")
+
     # Starts the FFMPEG process in the background
-    # Sample FFMPEG command: # ffmpeg.exe -i "rtsp://admin:spot9666@192.168.50.215/Preview_01_main" -b:v 25k -vcodec copy -acodec aac -f flv "rtmp://a.rtmp.youtube.com/live2/jk9h-z547-97uv-q42j-0944"
+    # Sample FFMPEG command: # ffmpeg.exe -i "rtsp://admin:spot9666@192.168.50.215/Preview_02_main" -b:v 25k -vcodec copy -acodec aac -f flv "rtmp://a.rtmp.youtube.com/live2/jk9h-z547-97uv-q42j-0944"
     process = subprocess.Popen([
         "C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe",
         "-i",
-        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{secrets['camera_stream_mapping'][stream_name]}",
+        f"rtsp://{STREAM_USERNAME}:{STREAM_PASSWORD}@192.168.50.215/{camera_name}",
         "-b:v",
         "25k",
         "-vcodec",
@@ -102,14 +105,14 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
         "-f",
         "flv",
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
-    ], stderr=subprocess.STDOUT, creationflags=0x00000008) # Creation flag allows process to start in background
+    ], creationflags=0x00000008) # Creation flag allows process to start in background
 
-    print(process)
-    logger.log(f"error code: {process.returncode}")
+    # print(process)
+    # logger.log(f"error code: {process.returncode}")
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
     
-    # sleep(10)
+    sleep(10) # wait for ffmpeg to start
     # Transition broadcast from not live state to live state
     ga.broadcast_go_live(broadcast_id)
     
@@ -131,7 +134,7 @@ def close_idle_broadcast(broadcast_id):
     logger.log(f"Viewer count: {viewer_count}")
     if viewer_count > 0:
         logger.log(f"There are currently {viewer_count} viewers watching the stream.")
-    elif runtime > 10:
+    # elif runtime > 10:
         logger.log("There are no viewers watching the stream. Terminating broadcast.")
         # kill the process with process id = pid
         with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
