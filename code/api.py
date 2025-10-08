@@ -8,13 +8,40 @@ from time import sleep
 from contextlib import asynccontextmanager
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+import os
 
 ga.google_auth()
+
+def startup_db_setup():
+    # check if broadcast_db.csv exists, if not create it and add header
+    if os.path.exists('broadcast_db.csv'):
+        logger.log("broadcast_db.csv exists!")
+    else:
+        with open('broadcast_db.csv', 'x', newline='') as csvfile:
+            writer = pd.DataFrame(columns=['stream_name', 'pid', 'broadcast_id'])
+            writer.to_csv(csvfile, index=False)
+            
+    broadcast_df = pd.read_csv('broadcast_db.csv')
+    for index, row in broadcast_df.iterrows():
+        broadcast_id = row['broadcast_id']
+        if not ga.broadcast_is_live(broadcast_id):
+            logger.log(f'Broadcast ID: {broadcast_id} is not live. Removing from broadcast_db.csv')
+            broadcast_df = broadcast_df[broadcast_df['broadcast_id'] != broadcast_id]
+            # kill the ffmpeg process
+            pid = row['pid']
+            if pid != '':
+                try:
+                    logger.log(f'Killing ffmpeg process with PID: {pid}')
+                    os.kill(pid, 9)
+                except Exception as e:
+                    logger.log(f'Error killing ffmpeg process with PID: {pid} | Error: {e}')
+    broadcast_df.to_csv('broadcast_db.csv', index=False)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Run at startup
-
+    startup_db_setup()
     # Start the broadcast monitor in the background
     # This function closes streams that are not being watched
     asyncio.create_task(sf.broadcast_monitor())
@@ -54,7 +81,7 @@ async def stream(stream_name: str = Query(None)):
         sf.update_nginx_stream_urls(nginx_path, stream_name, broadcast_id)
         sf.reload_nginx(nginx_path)
 
-    return f"https://www.youtube.com/live/{broadcast_id}"
+    return f"Stream ${stream_name} is already live!"
 
 # To allow the initial CORS OPTIONS call to succeed
 # This is required to allow cross-origin requests from the WordPress site

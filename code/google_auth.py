@@ -203,9 +203,9 @@ def get_broadcast_info(broadcast_id):
             logger.log(f'Viewer Count is: {viewer_count}')
     return int(viewer_count), runtime
 
-def get_all_broadcasts():
+def get_active_broadcasts():
     #google_auth()
-    logger.log('Getting All Broadcasts')
+    logger.log('Getting all active broadcasts')
     response = yt_client.liveBroadcasts().list(
         part="snippet,contentDetails,status",
         broadcastStatus='active',

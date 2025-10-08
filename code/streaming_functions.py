@@ -9,15 +9,15 @@ import asyncio
 import requests
 
 def at_broadcast_limit(broadcast_limit: int):
-    # check if stream_pid_logger.csv exists, if not create it and add header
-    if os.path.exists('stream_pid_logger.csv'):
-        logger.log("stream_pid_logger.csv exists!")
+    # check if broadcast_db.csv exists, if not create it and add header
+    if os.path.exists('broadcast_db.csv'):
+        logger.log("broadcast_db.csv exists!")
     else:
-        with open('stream_pid_logger.csv', 'x', newline='') as csvfile:
+        with open('broadcast_db.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['stream_name', 'pid', 'broadcast_id'])
 
-    with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
+    with open('broadcast_db.csv', 'r', newline='') as csvfile:
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
         row_count = sum(1 for row in reader) - 1  # subtract 1 for header
@@ -48,8 +48,8 @@ def stream_is_live(stream_name: str):
     return False
 
 def ffmpeg_running(stream_name: str):
-    if os.path.exists('stream_pid_logger.csv'):
-        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
+    if os.path.exists('broadcast_db.csv'):
+        with open('broadcast_db.csv', 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
             next(reader)  # Skip header
             for row in reader:
@@ -59,7 +59,7 @@ def ffmpeg_running(stream_name: str):
     return False
 
 def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
-    logger = pd.read_csv("stream_pid_logger.csv", dtype='string')
+    logger = pd.read_csv("broadcast_db.csv", dtype='string')
     if len(logger) == 0:
         logger = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
     elif pid is None:
@@ -67,14 +67,14 @@ def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
         logger = pd.concat([logger, new_row])
     else:
         logger.loc[logger['stream_name'] == stream_name, 'pid'] = str(pid)
-    logger.to_csv("stream_pid_logger.csv", index=False)
+    logger.to_csv("broadcast_db.csv", index=False)
     return
 
 def delete_stream_info(broadcast_id: str):
-    logger = pd.read_csv("stream_pid_logger.csv", dtype='string')
+    logger = pd.read_csv("broadcast_db.csv", dtype='string')
     # delete the row from logger if it matches the stream_name var
     logger = logger[~(logger['broadcast_id'] == broadcast_id)]
-    logger.to_csv("stream_pid_logger.csv", index=False)
+    logger.to_csv("broadcast_db.csv", index=False)
     return
 
 
@@ -121,7 +121,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
 async def broadcast_monitor():
     while(True):
         logger.log("Checking for running broadcasts")
-        broadcasts = ga.get_all_broadcasts()
+        broadcasts = ga.get_active_broadcasts()
         for broadcast in broadcasts:
             broadcast_id = broadcast['id']
             if ga.broadcast_is_live(broadcast_id):
@@ -134,16 +134,16 @@ def close_idle_broadcast(broadcast_id):
     logger.log(f"Viewer count: {viewer_count}")
     if viewer_count > 0:
         logger.log(f"There are currently {viewer_count} viewers watching the stream.")
-    # elif runtime > 10:
-        logger.log("There are no viewers watching the stream. Terminating broadcast.")
-        # kill the process with process id = pid
-        with open('stream_pid_logger.csv', 'r', newline='') as csvfile:
-            reader = csv.reader(csvfile)
-            for row in reader:
-                if row[2] == broadcast_id:
-                    pid = int(row[1])
-                    logger.log(f"Killing process with PID = {pid}")
-                    os.kill(pid, 9)  # force kill the process
+        if runtime > 10:
+            logger.log("There are no viewers watching the stream. Terminating broadcast.")
+            # kill the process with process id = pid
+            with open('broadcast_db.csv', 'r', newline='') as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    if row[2] == broadcast_id:
+                        pid = int(row[1])
+                        logger.log(f"Killing process with PID = {pid}")
+                        os.kill(pid, 9)  # force kill the process
         ga.terminate_broadcast(broadcast_id)
         delete_stream_info(broadcast_id)
 
