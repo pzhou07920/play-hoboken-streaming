@@ -150,7 +150,7 @@ def broadcast_is_live(broadcast_id):
         if item['id'] == broadcast_id:
             status = item['status']['lifeCycleStatus']
             logger.log(f'Broadcast Status is: {status}')
-            if status == 'live':
+            if status == 'live' or status == 'liveStarting':
                 return True
             else:
                 return False
