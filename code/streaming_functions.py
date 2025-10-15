@@ -59,15 +59,14 @@ def ffmpeg_running(stream_name: str):
     return False
 
 def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
-    logger = pd.read_csv("broadcast_db.csv", dtype='string')
-    if len(logger) == 0:
-        logger = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
-    elif pid is None:
+    broadcast_df = pd.read_csv("broadcast_db.csv", dtype='string')
+    logger.log(f"Logging stream info for {stream_name} | Broadcast ID: {broadcast_id} | PID: {pid}")
+    if pid is None:
         new_row = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
-        logger = pd.concat([logger, new_row])
+        broadcast_df = pd.concat([broadcast_df, new_row])
     else:
-        logger.loc[logger['stream_name'] == stream_name, 'pid'] = str(pid)
-    logger.to_csv("broadcast_db.csv", index=False)
+        broadcast_df.loc[(broadcast_df['stream_name'] == stream_name) & (broadcast_df['broadcast_id'] == broadcast_id), 'pid'] = str(pid)
+    broadcast_df.to_csv("broadcast_db.csv", index=False)
     return
 
 def delete_stream_info(broadcast_id: str):
@@ -132,8 +131,7 @@ def close_idle_broadcast(broadcast_id):
     viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
     logger.log(f"Stream has been running for {runtime} minutes")
     logger.log(f"Viewer count: {viewer_count}")
-    if viewer_count > 0:
-        logger.log(f"There are currently {viewer_count} viewers watching the stream.")
+    if viewer_count == 0:
         if runtime > 10:
             logger.log("There are no viewers watching the stream. Terminating broadcast.")
             # kill the process with process id = pid
@@ -144,8 +142,8 @@ def close_idle_broadcast(broadcast_id):
                         pid = int(row[1])
                         logger.log(f"Killing process with PID = {pid}")
                         os.kill(pid, 9)  # force kill the process
-        ga.terminate_broadcast(broadcast_id)
-        delete_stream_info(broadcast_id)
+            ga.terminate_broadcast(broadcast_id)
+            delete_stream_info(broadcast_id)
 
 def update_nginx_stream_urls(nginx_path: str, stream_name: str, broadcast_id: str):
     stream_urls_path = f"{nginx_path}\\conf\\stream_urls.conf"
