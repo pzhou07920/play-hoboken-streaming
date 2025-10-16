@@ -142,11 +142,8 @@ async def stream(stream_name: str = Query(None)):
 
     workflow_queue.put(stream_name)
     # check if stream is already running
-    # if not sf.stream_is_live(stream_name):
-    #     logger.log(f"Stream {stream_name} is not live. Adding stream to workflow queue.")
-    #     
-    #     # sf.start_workflow(secrets['nginx_path'], stream_name, secrets)
-    #     return f"Stream {stream_name} is starting!"
+    if not sf.stream_is_live(stream_name):
+        return f"Stream {stream_name} is starting!"
 
     return f"Stream {stream_name} is already live!"
 
