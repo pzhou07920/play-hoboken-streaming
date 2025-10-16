@@ -111,7 +111,7 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
     
-    sleep(10) # wait for ffmpeg to start
+    sleep(12) # wait for ffmpeg to start
     # Transition broadcast from not live state to live state
     ga.broadcast_go_live(broadcast_id)
     
