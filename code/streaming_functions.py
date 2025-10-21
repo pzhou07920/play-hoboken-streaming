@@ -125,7 +125,7 @@ async def broadcast_monitor():
             broadcast_id = broadcast['id']
             if ga.broadcast_is_live(broadcast_id):
                 close_idle_broadcast(broadcast_id)
-        await asyncio.sleep(300)  # check every 5 minutes
+        await asyncio.sleep(1200)  # check every 20 minutes
 
 def close_idle_broadcast(broadcast_id):
     viewer_count, runtime = ga.get_broadcast_info(broadcast_id)
