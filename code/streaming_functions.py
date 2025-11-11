@@ -1,3 +1,4 @@
+import urllib3
 import logger
 from time import sleep
 import google_auth as ga
@@ -31,13 +32,14 @@ def at_broadcast_limit(broadcast_limit: int):
 def stream_is_live(stream_name: str):
     # make an API request to nginx/stream_name and retrieve the broadcast_id from the response youtube url
     redirect_url = f"https://stream2.playhoboken.com/{stream_name}"
+    urllib3.disable_warnings()
     response = requests.get(redirect_url, verify=False)
     if response.status_code == 200:
         redirect_url = response.url
         logger.log(f"Redirect URL: {redirect_url}")
         path_segments = redirect_url.split('/')
         broadcast_id = path_segments[-1]  # The last segment is the broadcast ID
-        if ga.broadcast_is_live(broadcast_id):
+        if ga.get_broadcast_status(broadcast_id) == 'live':
             logger.log(f"Stream {stream_name} is live.")
             return True
         else:
@@ -78,11 +80,11 @@ def delete_stream_info(broadcast_id: str):
 
 
 def create_broadcast(stream_name: str):
-    broadcast_id, stream_key = ga.start_new_broadcast(stream_name)
+    broadcast_id, stream_id, stream_key = ga.start_new_broadcast(stream_name)
     log_stream_info(stream_name, broadcast_id)
-    return broadcast_id, stream_key
+    return broadcast_id, stream_id, stream_key
 
-def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: dict):
+def start_ffmpeg(stream_name: str, broadcast_id: str, stream_id: str, stream_key: str, secrets: dict):
     STREAM_USERNAME = secrets['stream_username']
     STREAM_PASSWORD = secrets['stream_password']
 
@@ -111,8 +113,11 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_key: str, secrets: 
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
     
-    sleep(12) # wait for ffmpeg to start
+    #sleep(12) # wait for ffmpeg to start
     # Transition broadcast from not live state to live state
+    while ga.get_stream_status(stream_id) != 'active':
+        sleep(1)
+
     ga.broadcast_go_live(broadcast_id)
     
     return broadcast_id
@@ -123,7 +128,7 @@ async def broadcast_monitor():
         broadcasts = ga.get_active_broadcasts()
         for broadcast in broadcasts:
             broadcast_id = broadcast['id']
-            if ga.broadcast_is_live(broadcast_id):
+            if ga.get_broadcast_status(broadcast_id) == 'live':
                 close_idle_broadcast(broadcast_id)
         await asyncio.sleep(1200)  # check every 20 minutes
 

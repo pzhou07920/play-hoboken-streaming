@@ -127,7 +127,7 @@ def start_new_broadcast(stream_title):
     stream_id = start_yt_livestream()
     bind_broadcast_to_stream(broadcast_id, stream_id)
     stream_key = get_streamkey(stream_id)
-    return broadcast_id, stream_key
+    return broadcast_id, stream_id, stream_key
 
 def broadcast_go_live(broadcast_id):
     logger.log(f"Going live with broadcast: {broadcast_id}")
@@ -138,23 +138,20 @@ def broadcast_go_live(broadcast_id):
     ).execute()
    #"https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?part=id,snippet,contentDetails,status&broadcastStatus=live&id=$BROADCAST_ID"
 
-def broadcast_is_live(broadcast_id):
+def get_broadcast_status(broadcast_id):
     logger.log(f'Checking if Broadcast ID: {broadcast_id} is live')
     response = yt_client.liveBroadcasts().list(
         part="snippet,contentDetails,status",
         id=broadcast_id
     ).execute()
 
-    #logger.log(response)
-    for item in response.get('items', []):
-        if item['id'] == broadcast_id:
-            status = item['status']['lifeCycleStatus']
-            logger.log(f'Broadcast Status is: {status}')
-            if status == 'live' or status == 'liveStarting':
-                return True
-            else:
-                return False
-    return False
+    if response.get('items', []) == []:
+        logger.log(f"No broadcast found with ID: {broadcast_id}")
+        return "Not live"
+    
+    status = response.get('items', [])[0]['status']['lifeCycleStatus']
+    logger.log(f"Broadcast Status is: {status}")
+    return status
 
 def get_stream_status(stream_id):
     #yt_client = google_auth()
@@ -166,9 +163,12 @@ def get_stream_status(stream_id):
 
     #logger.log(response)
     # get the Stream Key for the item with id = stream_id
-    for item in response.get('items', []):
-        if item['id'] == stream_id:
-            logger.log(item)
+    # for item in response.get('items', []):
+    #     if item['id'] == stream_id:
+    #         logger.log(item)
+    status = response.get('items', [])[0]['status']['streamStatus']
+    logger.log(f"Stream Status is: {status}")
+    return status
 
 def terminate_broadcast(broadcast_id):
     #google_auth()

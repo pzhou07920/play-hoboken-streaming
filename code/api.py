@@ -26,7 +26,7 @@ def startup_db_setup():
     broadcast_df = pd.read_csv('broadcast_db.csv')
     for index, row in broadcast_df.iterrows():
         broadcast_id = row['broadcast_id']
-        if not ga.broadcast_is_live(broadcast_id):
+        if ga.get_broadcast_status(broadcast_id) != 'live':
             logger.log(f'Broadcast ID: {broadcast_id} is not live. Removing from broadcast_db.csv')
             broadcast_df = broadcast_df[broadcast_df['broadcast_id'] != broadcast_id]
         else:
@@ -81,10 +81,12 @@ def start_workflow(nginx_path: str, stream_name:str, secrets: dict):
     update_workflow_status(stream_name, True)
 
     if not sf.stream_is_live(stream_name):
-        broadcast_id, stream_key = sf.create_broadcast(stream_name)
-        broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_key, secrets)
+        logger.log(f"Stream {stream_name} is not live. Starting new broadcast and ffmpeg process.")
+        broadcast_id, stream_id, stream_key = sf.create_broadcast(stream_name)
+        broadcast_id = sf.start_ffmpeg(stream_name, broadcast_id, stream_id, stream_key, secrets)
         sf.update_nginx_stream_urls(nginx_path, stream_name, broadcast_id)
         sf.reload_nginx(nginx_path)
+        logger.log(f"Stream {stream_name} has been started!")
     
     update_workflow_status(stream_name, False)
 
