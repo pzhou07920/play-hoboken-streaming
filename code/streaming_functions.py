@@ -108,13 +108,9 @@ def start_ffmpeg(stream_name: str, broadcast_id: str, stream_id: str, stream_key
         f"rtmp://a.rtmp.youtube.com/live2/{stream_key}"
     ], creationflags=0x00000008) # Creation flag allows process to start in background
 
-    # print(process)
-    # logger.log(f"error code: {process.returncode}")
     logger.log(f"Started FFMPEG process with PID = {process.pid}")
     log_stream_info(stream_name, broadcast_id, process.pid)
     
-    #sleep(12) # wait for ffmpeg to start
-    # Transition broadcast from not live state to live state
     while ga.get_stream_status(stream_id) != 'active':
         sleep(1)
 
@@ -150,6 +146,10 @@ def close_idle_broadcast(broadcast_id):
             ga.terminate_broadcast(broadcast_id)
             delete_stream_info(broadcast_id)
 
+def reload_nginx(nginx_path: str = None):
+    subprocess.Popen([f"{nginx_path}\\nginx.exe", "-s", "reload"], cwd=nginx_path)
+    logger.log("Reloaded NGINX configuration")
+
 def update_nginx_stream_urls(nginx_path: str, stream_name: str, broadcast_id: str):
     stream_urls_path = f"{nginx_path}\\conf\\stream_urls.conf"
     youtube_url = f"https://www.youtube.com/embed/{broadcast_id}"
@@ -163,6 +163,4 @@ def update_nginx_stream_urls(nginx_path: str, stream_name: str, broadcast_id: st
             else:
                 f.write(line)
 
-def reload_nginx(nginx_path: str = None):
-    subprocess.Popen([f"{nginx_path}\\nginx.exe", "-s", "reload"], cwd=nginx_path)
-    logger.log("Reloaded NGINX configuration")
+    reload_nginx(nginx_path)

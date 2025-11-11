@@ -1,8 +1,8 @@
 import datetime
 
 def log(msg: str):
-    time = datetime.datetime.now().strftime("%H:%M:%S")
-    log = f"[{time}] {msg}"
+    timestamp = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    log = f"[{timestamp}] {msg}"
     print(log)
     with open("logs.txt", "a") as f:
         f.write(log + "\n")
