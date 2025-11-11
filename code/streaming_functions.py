@@ -10,15 +10,15 @@ import asyncio
 import requests
 
 def at_broadcast_limit(broadcast_limit: int):
-    # check if broadcast_db.csv exists, if not create it and add header
-    if os.path.exists('broadcast_db.csv'):
-        logger.log("broadcast_db.csv exists!")
+    # check if db/broadcast_db.csv exists, if not create it and add header
+    if os.path.exists('db/broadcast_db.csv'):
+        logger.log("db/broadcast_db.csv exists!")
     else:
-        with open('broadcast_db.csv', 'x', newline='') as csvfile:
+        with open('db/broadcast_db.csv', 'x', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['stream_name', 'pid', 'broadcast_id'])
 
-    with open('broadcast_db.csv', 'r', newline='') as csvfile:
+    with open('db/broadcast_db.csv', 'r', newline='') as csvfile:
         reader = csv.reader(csvfile)
         # count the number of rows in the csv file
         row_count = sum(1 for row in reader) - 1  # subtract 1 for header
@@ -50,8 +50,8 @@ def stream_is_live(stream_name: str):
     return False
 
 def ffmpeg_running(stream_name: str):
-    if os.path.exists('broadcast_db.csv'):
-        with open('broadcast_db.csv', 'r', newline='') as csvfile:
+    if os.path.exists('db/broadcast_db.csv'):
+        with open('db/broadcast_db.csv', 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
             next(reader)  # Skip header
             for row in reader:
@@ -61,21 +61,21 @@ def ffmpeg_running(stream_name: str):
     return False
 
 def log_stream_info(stream_name: str, broadcast_id: str, pid: int = None):
-    broadcast_df = pd.read_csv("broadcast_db.csv", dtype='string')
+    broadcast_df = pd.read_csv("db/broadcast_db.csv", dtype='string')
     logger.log(f"Logging stream info for {stream_name} | Broadcast ID: {broadcast_id} | PID: {pid}")
     if pid is None:
         new_row = pd.DataFrame([(stream_name, "", broadcast_id)], columns=["stream_name","pid","broadcast_id"], dtype="string")
         broadcast_df = pd.concat([broadcast_df, new_row])
     else:
         broadcast_df.loc[(broadcast_df['stream_name'] == stream_name) & (broadcast_df['broadcast_id'] == broadcast_id), 'pid'] = str(pid)
-    broadcast_df.to_csv("broadcast_db.csv", index=False)
+    broadcast_df.to_csv("db/broadcast_db.csv", index=False)
     return
 
 def delete_stream_info(broadcast_id: str):
-    logger = pd.read_csv("broadcast_db.csv", dtype='string')
+    logger = pd.read_csv("db/broadcast_db.csv", dtype='string')
     # delete the row from logger if it matches the stream_name var
     logger = logger[~(logger['broadcast_id'] == broadcast_id)]
-    logger.to_csv("broadcast_db.csv", index=False)
+    logger.to_csv("db/broadcast_db.csv", index=False)
     return
 
 
@@ -140,7 +140,7 @@ def close_idle_broadcast(broadcast_id):
         if runtime > 10:
             logger.log("There are no viewers watching the stream. Terminating broadcast.")
             # kill the process with process id = pid
-            with open('broadcast_db.csv', 'r', newline='') as csvfile:
+            with open('db/broadcast_db.csv', 'r', newline='') as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     if row[2] == broadcast_id:
